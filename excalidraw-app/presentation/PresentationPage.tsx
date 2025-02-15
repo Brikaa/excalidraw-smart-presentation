@@ -12,6 +12,22 @@ export function PresentationScene(props: {
   setPresentation: (enabled: boolean) => unknown;
 }) {
   const { elements, frame, setPresentation } = props;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const appMenu = document.getElementsByClassName("App-menu");
+      if (appMenu.length === 0) {
+        return;
+      }
+      clearInterval(interval);
+      for (const el of appMenu) {
+        const htmlElement = el as HTMLElement;
+        htmlElement.style.opacity = "0";
+      }
+    }, 100);
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
   const stopPresentation = useCallback(
     () => setPresentation(false),
     [setPresentation],
