@@ -132,6 +132,7 @@ import DebugCanvas, {
 import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 import { isElementLink } from "@excalidraw/excalidraw/element/elementLink";
+import { Presentation } from "./presentation/Presentation";
 
 polyfill();
 
@@ -910,6 +911,7 @@ const ExcalidrawWrapper = () => {
         {excalidrawAPI && !isCollabDisabled && (
           <Collab excalidrawAPI={excalidrawAPI} />
         )}
+        {excalidrawAPI && <Presentation excalidrawAPI={excalidrawAPI} />}
 
         <ShareDialog
           collabAPI={collabAPI}
