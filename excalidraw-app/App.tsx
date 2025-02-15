@@ -133,6 +133,7 @@ import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 import { isElementLink } from "@excalidraw/excalidraw/element/elementLink";
 import { Presentation } from "./presentation/Presentation";
+import { PresentationPage } from "./presentation/PresentationPage";
 
 polyfill();
 
@@ -329,7 +330,10 @@ const initializeScene = async (opts: {
   return { scene: null, isExternalScene: false };
 };
 
-const ExcalidrawWrapper = () => {
+const ExcalidrawWrapper = (props: {
+  setPresentation: (enabled: boolean) => unknown;
+}) => {
+  const { setPresentation } = props;
   const [errorMessage, setErrorMessage] = useState("");
   const isCollabDisabled = isRunningInIframe();
 
@@ -911,7 +915,12 @@ const ExcalidrawWrapper = () => {
         {excalidrawAPI && !isCollabDisabled && (
           <Collab excalidrawAPI={excalidrawAPI} />
         )}
-        {excalidrawAPI && <Presentation excalidrawAPI={excalidrawAPI} />}
+        {excalidrawAPI && (
+          <Presentation
+            excalidrawAPI={excalidrawAPI}
+            setPresentation={setPresentation}
+          />
+        )}
 
         <ShareDialog
           collabAPI={collabAPI}
@@ -1140,6 +1149,7 @@ const ExcalidrawWrapper = () => {
 const ExcalidrawApp = () => {
   const isCloudExportWindow =
     window.location.pathname === "/excalidraw-plus-export";
+  const [presentation, setPresentation] = useState(false);
   if (isCloudExportWindow) {
     return <ExcalidrawPlusIframeExport />;
   }
@@ -1147,7 +1157,9 @@ const ExcalidrawApp = () => {
   return (
     <TopErrorBoundary>
       <Provider store={appJotaiStore}>
-        <ExcalidrawWrapper />
+        {(!presentation && (
+          <ExcalidrawWrapper setPresentation={setPresentation} />
+        )) || <PresentationPage setPresentation={setPresentation} />}
       </Provider>
     </TopErrorBoundary>
   );

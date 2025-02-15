@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { ExcalidrawImperativeAPI } from "../../packages/excalidraw/types";
 import { convertToExcalidrawElements } from "../../packages/excalidraw";
+import { CODES } from "../../packages/excalidraw/keys";
 
 const rectangle = {
   type: "rectangle" as const,
@@ -16,8 +17,9 @@ let startTime: number | null = null;
 
 export function Presentation(props: {
   excalidrawAPI: ExcalidrawImperativeAPI;
+  setPresentation: (enabled: boolean) => unknown;
 }) {
-  const { excalidrawAPI } = props;
+  const { excalidrawAPI, setPresentation } = props;
 
   const animate = useCallback(
     (timestamp: number) => {
@@ -51,6 +53,11 @@ export function Presentation(props: {
   const prevElementsCount = useRef(0);
 
   useEffect(() => {
+    document.addEventListener("keydown", (e) => {
+      if (e.code === CODES.Z) {
+        setPresentation(true);
+      }
+    });
     const unsub = excalidrawAPI.onChange((elements, appState) => {
       if (
         !excalidrawAPI ||
@@ -67,8 +74,10 @@ export function Presentation(props: {
       prevElementsCount.current = elements.length;
       excalidrawAPI.updateScene({ elements: newElements });
     });
-    return unsub;
-  }, [excalidrawAPI]);
+    return () => {
+      unsub();
+    };
+  }, [excalidrawAPI, setPresentation]);
 
   return null;
 }
