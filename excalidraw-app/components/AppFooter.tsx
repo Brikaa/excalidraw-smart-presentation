@@ -1,12 +1,22 @@
-import React from "react";
-import { Footer } from "@excalidraw/excalidraw/index";
+import React, { useCallback } from "react";
+import { Button, Footer } from "@excalidraw/excalidraw/index";
 import { EncryptedIcon } from "./EncryptedIcon";
 import { ExcalidrawPlusAppLink } from "./ExcalidrawPlusAppLink";
 import { isExcalidrawPlusSignedUser } from "../app_constants";
 import { DebugFooter, isVisualDebuggerEnabled } from "./DebugCanvas";
 
 export const AppFooter = React.memo(
-  ({ onChange }: { onChange: () => void }) => {
+  ({
+    onChange,
+    setPresentation,
+  }: {
+    onChange: () => void;
+    setPresentation: (enabled: boolean) => unknown;
+  }) => {
+    const startPresentation = useCallback(
+      () => setPresentation(true),
+      [setPresentation],
+    );
     return (
       <Footer>
         <div
@@ -22,6 +32,13 @@ export const AppFooter = React.memo(
           ) : (
             <EncryptedIcon />
           )}
+          <Button
+            onSelect={startPresentation}
+            className={"collab-buton"}
+            style={{ width: "fit-content" }}
+          >
+            Present
+          </Button>
         </div>
       </Footer>
     );

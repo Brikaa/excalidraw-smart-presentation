@@ -1,7 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { importFromLocalStorage } from "../data/localStorage";
-import { Excalidraw } from "../../packages/excalidraw";
-import { CODES } from "../../packages/excalidraw/keys";
+import { Button, Excalidraw, Footer } from "../../packages/excalidraw";
 import type {
   ExcalidrawElement,
   ExcalidrawFrameElement,
@@ -10,8 +9,13 @@ import type {
 export function PresentationScene(props: {
   elements: ExcalidrawElement[];
   frame: ExcalidrawFrameElement;
+  setPresentation: (enabled: boolean) => unknown;
 }) {
-  const { elements, frame } = props;
+  const { elements, frame, setPresentation } = props;
+  const stopPresentation = useCallback(
+    () => setPresentation(false),
+    [setPresentation],
+  );
   const frameElements = useMemo(
     () => elements.filter((e) => e.frameId === frame?.id),
     [elements, frame?.id],
@@ -22,10 +26,17 @@ export function PresentationScene(props: {
     y: e.y - frame.y,
   }));
   return (
-    <Excalidraw
-      initialData={{ elements: positionedElements }}
-      viewModeEnabled
-    />
+    <Excalidraw initialData={{ elements: positionedElements }} viewModeEnabled>
+      <Footer>
+        <Button
+          onSelect={stopPresentation}
+          className={"collab-buton"}
+          style={{ width: "fit-content" }}
+        >
+          Stop presenting
+        </Button>
+      </Footer>
+    </Excalidraw>
   );
 }
 
@@ -35,18 +46,6 @@ export function PresentationPage(props: {
   const { setPresentation } = props;
   const { elements } = importFromLocalStorage();
 
-  useEffect(() => {
-    document.addEventListener("keydown", (e) => {
-      if (e.code === CODES.Z) {
-        setPresentation(false);
-      }
-    });
-    const appMenu = document.getElementsByClassName("App-menu");
-    for (const el of appMenu) {
-      el.remove();
-    }
-  }, [setPresentation]);
-
   // Get first frame
   const frame = useMemo(
     () => elements.find((e): e is ExcalidrawFrameElement => e.type === "frame"),
@@ -55,5 +54,11 @@ export function PresentationPage(props: {
   if (!frame) {
     return null;
   }
-  return <PresentationScene elements={elements} frame={frame} />;
+  return (
+    <PresentationScene
+      elements={elements}
+      frame={frame}
+      setPresentation={setPresentation}
+    />
+  );
 }
