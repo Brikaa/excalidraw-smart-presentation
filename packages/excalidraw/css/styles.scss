@@ -307,9 +307,6 @@ body.excalidraw-cursor-resize * {
   .App-menu {
     display: grid;
     color: var(--icon-fill-color);
-    &:hover {
-      opacity: 1 !important;
-    }
   }
 
   .shapes-section {
