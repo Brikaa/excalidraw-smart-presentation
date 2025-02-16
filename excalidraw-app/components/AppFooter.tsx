@@ -6,17 +6,12 @@ import { isExcalidrawPlusSignedUser } from "../app_constants";
 import { DebugFooter, isVisualDebuggerEnabled } from "./DebugCanvas";
 
 export const AppFooter = React.memo(
-  ({
-    onChange,
-    setPresentation,
-  }: {
-    onChange: () => void;
-    setPresentation: (enabled: boolean) => unknown;
-  }) => {
-    const startPresentation = useCallback(
-      () => setPresentation(true),
-      [setPresentation],
-    );
+  ({ onChange }: { onChange: () => void }) => {
+    const startPresentation = useCallback(() => {
+      const newUrl = new URL(window.location.href);
+      newUrl.hash = "#presentation";
+      window.open(newUrl.href, "_blank");
+    }, []);
     return (
       <Footer>
         <div

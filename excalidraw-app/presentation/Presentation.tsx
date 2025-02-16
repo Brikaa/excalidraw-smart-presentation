@@ -2,6 +2,13 @@ import { useCallback, useEffect, useRef } from "react";
 import type { ExcalidrawImperativeAPI } from "../../packages/excalidraw/types";
 import { convertToExcalidrawElements } from "../../packages/excalidraw";
 
+const RE_PRESENTATION_LINK = /^#presentation$/;
+
+export const isPresentationLink = (link: string) => {
+  const hash = new URL(link).hash;
+  return RE_PRESENTATION_LINK.test(hash);
+};
+
 const rectangle = {
   type: "rectangle" as const,
   x: 100,
@@ -16,9 +23,8 @@ let startTime: number | null = null;
 
 export function Presentation(props: {
   excalidrawAPI: ExcalidrawImperativeAPI;
-  setPresentation: (enabled: boolean) => unknown;
 }) {
-  const { excalidrawAPI, setPresentation } = props;
+  const { excalidrawAPI } = props;
 
   const animate = useCallback(
     (timestamp: number) => {
@@ -71,7 +77,7 @@ export function Presentation(props: {
     return () => {
       unsub();
     };
-  }, [excalidrawAPI, setPresentation]);
+  }, [excalidrawAPI]);
 
   return null;
 }
