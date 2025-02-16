@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { importFromLocalStorage } from "../data/localStorage";
 import { Excalidraw } from "../../packages/excalidraw";
 import type {
   ExcalidrawElement,
   ExcalidrawFrameElement,
 } from "../../packages/excalidraw/element/types";
+import type { ExcalidrawImperativeAPI } from "../../packages/excalidraw/types";
 
 export function PresentationScene(props: {
   elements: ExcalidrawElement[];
@@ -15,14 +16,57 @@ export function PresentationScene(props: {
     () => elements.filter((e) => e.frameId === frame?.id),
     [elements, frame?.id],
   );
-  const positionedElements = frameElements.map((e) => ({
-    ...e,
-    x: e.x - frame.x,
-    y: e.y - frame.y,
-  }));
+
+  const [canvasWidth, setCanvasWidth] = useState(1);
+  const [canvasHeight, setCanvasHeight] = useState(1);
+
+  const [excalidrawAPI, setExcalidrawAPI] =
+    useState<ExcalidrawImperativeAPI | null>(null);
+  const loadExcalidrawAPI = useCallback(
+    (api: ExcalidrawImperativeAPI) => setExcalidrawAPI(api),
+    [],
+  );
+
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    const state = excalidrawAPI.getAppState();
+    setCanvasWidth(state.width);
+    setCanvasHeight(state.height);
+    const unsub = excalidrawAPI.onChange((_, appState) => {
+      setCanvasHeight(appState.height);
+      setCanvasWidth(appState.width);
+    });
+    return () => {
+      unsub();
+    };
+  }, [excalidrawAPI]);
+
+  const positionedElements = useMemo(
+    () =>
+      frameElements.map((e) => ({
+        ...e,
+        x: e.x - frame.x,
+        y: e.y - frame.y,
+        height: e.height * (canvasHeight / Math.max(frame.width, frame.height)),
+        width: e.width * (canvasWidth / Math.max(frame.width, frame.height)),
+      })),
+    [
+      canvasHeight,
+      canvasWidth,
+      frame.height,
+      frame.width,
+      frame.x,
+      frame.y,
+      frameElements,
+    ],
+  );
+
   return (
     <Excalidraw
       initialData={{ elements: positionedElements }}
+      excalidrawAPI={loadExcalidrawAPI}
       viewModeEnabled
       presentationModeEnabled
     />
