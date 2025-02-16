@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { importFromLocalStorage } from "../data/localStorage";
 import { Excalidraw } from "../../packages/excalidraw";
 import type {
@@ -11,22 +11,6 @@ export function PresentationScene(props: {
   frame: ExcalidrawFrameElement;
 }) {
   const { elements, frame } = props;
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const appMenu = document.getElementsByClassName("App-menu");
-      if (appMenu.length === 0) {
-        return;
-      }
-      clearInterval(interval);
-      for (const el of appMenu) {
-        const htmlElement = el as HTMLElement;
-        htmlElement.style.opacity = "0";
-      }
-    }, 100);
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
   const frameElements = useMemo(
     () => elements.filter((e) => e.frameId === frame?.id),
     [elements, frame?.id],
@@ -40,6 +24,7 @@ export function PresentationScene(props: {
     <Excalidraw
       initialData={{ elements: positionedElements }}
       viewModeEnabled
+      presentationModeEnabled
     />
   );
 }
