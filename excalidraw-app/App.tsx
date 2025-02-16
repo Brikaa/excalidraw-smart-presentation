@@ -1,5 +1,5 @@
 import polyfill from "@excalidraw/excalidraw/polyfill";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { trackEvent } from "@excalidraw/excalidraw/analytics";
 import { getDefaultAppState } from "@excalidraw/excalidraw/appState";
 import { ErrorDialog } from "@excalidraw/excalidraw/components/ErrorDialog";
@@ -132,7 +132,7 @@ import DebugCanvas, {
 import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 import { isElementLink } from "@excalidraw/excalidraw/element/elementLink";
-import { Presentation } from "./presentation/Presentation";
+import { isPresentationLink, Presentation } from "./presentation/Presentation";
 import { PresentationPage } from "./presentation/PresentationPage";
 
 polyfill();
@@ -330,10 +330,7 @@ const initializeScene = async (opts: {
   return { scene: null, isExternalScene: false };
 };
 
-const ExcalidrawWrapper = (props: {
-  setPresentation: (enabled: boolean) => unknown;
-}) => {
-  const { setPresentation } = props;
+const ExcalidrawWrapper = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const isCollabDisabled = isRunningInIframe();
 
@@ -896,10 +893,7 @@ const ExcalidrawWrapper = (props: {
             </OverwriteConfirmDialog.Action>
           )}
         </OverwriteConfirmDialog>
-        <AppFooter
-          onChange={() => excalidrawAPI?.refresh()}
-          setPresentation={setPresentation}
-        />
+        <AppFooter onChange={() => excalidrawAPI?.refresh()} />
         {excalidrawAPI && <AIComponents excalidrawAPI={excalidrawAPI} />}
 
         <TTDDialogTrigger />
@@ -918,12 +912,7 @@ const ExcalidrawWrapper = (props: {
         {excalidrawAPI && !isCollabDisabled && (
           <Collab excalidrawAPI={excalidrawAPI} />
         )}
-        {excalidrawAPI && (
-          <Presentation
-            excalidrawAPI={excalidrawAPI}
-            setPresentation={setPresentation}
-          />
-        )}
+        {excalidrawAPI && <Presentation excalidrawAPI={excalidrawAPI} />}
 
         <ShareDialog
           collabAPI={collabAPI}
@@ -1152,7 +1141,10 @@ const ExcalidrawWrapper = (props: {
 const ExcalidrawApp = () => {
   const isCloudExportWindow =
     window.location.pathname === "/excalidraw-plus-export";
-  const [presentation, setPresentation] = useState(false);
+  const presentation = useMemo(
+    () => isPresentationLink(window.location.href),
+    [],
+  );
   if (isCloudExportWindow) {
     return <ExcalidrawPlusIframeExport />;
   }
@@ -1160,9 +1152,7 @@ const ExcalidrawApp = () => {
   return (
     <TopErrorBoundary>
       <Provider store={appJotaiStore}>
-        {(!presentation && (
-          <ExcalidrawWrapper setPresentation={setPresentation} />
-        )) || <PresentationPage setPresentation={setPresentation} />}
+        {(!presentation && <ExcalidrawWrapper />) || <PresentationPage />}
       </Provider>
     </TopErrorBoundary>
   );
