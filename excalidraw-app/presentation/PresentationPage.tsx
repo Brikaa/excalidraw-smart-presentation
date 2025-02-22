@@ -5,7 +5,10 @@ import type {
   ExcalidrawElement,
   ExcalidrawFrameElement,
 } from "../../packages/excalidraw/element/types";
-import type { ExcalidrawImperativeAPI } from "../../packages/excalidraw/types";
+import type {
+  ExcalidrawImperativeAPI,
+  NormalizedZoomValue,
+} from "../../packages/excalidraw/types";
 import { supportsResizeObserver } from "../../packages/excalidraw/constants";
 
 export function PresentationScene(props: {
@@ -60,12 +63,10 @@ export function PresentationScene(props: {
     () =>
       frameElements.map((e) => ({
         ...e,
-        x: (e.x - frame.x) * scale,
-        y: (e.y - frame.y) * scale,
-        height: e.height * scale,
-        width: e.width * scale,
+        x: e.x - frame.x,
+        y: e.y - frame.y,
       })),
-    [frame.x, frame.y, frameElements, scale],
+    [frame.x, frame.y, frameElements],
   );
 
   useEffect(() => {
@@ -73,7 +74,11 @@ export function PresentationScene(props: {
       return;
     }
     setTimeout(
-      () => excalidrawAPI.updateScene({ elements: positionedElements }),
+      () =>
+        excalidrawAPI.updateScene({
+          elements: positionedElements,
+          appState: { zoom: { value: scale as NormalizedZoomValue } },
+        }),
       0,
     );
   }, [excalidrawAPI, positionedElements, scale]);
