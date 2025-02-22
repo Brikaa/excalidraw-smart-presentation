@@ -51,10 +51,10 @@ export function PresentationScene(props: {
     };
   }, [excalidrawAPI]);
 
-  const scale =
-    presentationWidth / frame.width < presentationHeight / frame.height
-      ? presentationWidth / frame.width
-      : presentationHeight / frame.height;
+  const scale = Math.min(
+    presentationWidth / frame.width,
+    presentationHeight / frame.height,
+  );
 
   const positionedElements = useMemo(
     () =>
