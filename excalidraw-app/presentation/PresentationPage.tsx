@@ -53,7 +53,7 @@ export function PresentationScene(props: {
   }, [excalidrawAPI]);
 
   const scale =
-    frame.width > frame.height
+    presentationWidth / frame.width < presentationHeight / frame.height
       ? presentationWidth / frame.width
       : presentationHeight / frame.height;
 
