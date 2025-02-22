@@ -40,7 +40,6 @@ export function PresentationScene(props: {
         if (presentationSceneDiv.current) {
           const { width, height } =
             presentationSceneDiv.current.getBoundingClientRect();
-          console.log("Setting dimensions", { width, height });
           setPresentationWidth(width);
           setPresentationHeight(height);
         }
@@ -90,20 +89,16 @@ export function PresentationScene(props: {
     setDivHeightPercentage(((frame.height * scale) / presentationHeight) * 100);
   }, [presentationHeight, frame.height, scale]);
 
-  console.log({
-    scale,
-    presentationWidth,
-    presentationHeight,
-    divWidthPercentage,
-    divHeightPercentage,
-    frameWidth: frame.width,
-    frameHeight: frame.height,
-  });
-
   return (
     <div
       ref={presentationSceneDiv}
-      style={{ width: "100%", height: "100%", background: "black" }}
+      style={{
+        width: "100%",
+        height: "100%",
+        background: "black",
+        display: "grid",
+        placeItems: "center",
+      }}
     >
       <div
         style={{
