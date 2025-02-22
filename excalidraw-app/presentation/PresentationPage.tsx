@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { importFromLocalStorage } from "../data/localStorage";
 import { Excalidraw } from "../../packages/excalidraw";
 import type {
@@ -6,6 +6,7 @@ import type {
   ExcalidrawFrameElement,
 } from "../../packages/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "../../packages/excalidraw/types";
+import { supportsResizeObserver } from "../../packages/excalidraw/constants";
 
 export function PresentationScene(props: {
   elements: ExcalidrawElement[];
@@ -17,8 +18,8 @@ export function PresentationScene(props: {
     [elements, frame?.id],
   );
 
-  const [canvasWidth, setCanvasWidth] = useState(1);
-  const [canvasHeight, setCanvasHeight] = useState(1);
+  const [presentationWidth, setPresentationWidth] = useState(1);
+  const [presentationHeight, setPresentationHeight] = useState(1);
 
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
@@ -27,26 +28,34 @@ export function PresentationScene(props: {
     [],
   );
 
+  const presentationSceneDiv = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!excalidrawAPI) {
       return;
     }
-    const state = excalidrawAPI.getAppState();
-    setCanvasWidth(state.width);
-    setCanvasHeight(state.height);
-    const unsub = excalidrawAPI.onChange((_, appState) => {
-      setCanvasHeight(appState.height);
-      setCanvasWidth(appState.width);
-    });
+    let resizeObserver: ResizeObserver | null = null;
+    if (supportsResizeObserver && presentationSceneDiv.current) {
+      resizeObserver = new ResizeObserver(() => {
+        if (presentationSceneDiv.current) {
+          const { width, height } =
+            presentationSceneDiv.current.getBoundingClientRect();
+          console.log("Setting dimensions", { width, height });
+          setPresentationWidth(width);
+          setPresentationHeight(height);
+        }
+      });
+      resizeObserver.observe(presentationSceneDiv.current);
+    }
     return () => {
-      unsub();
+      resizeObserver?.disconnect();
     };
   }, [excalidrawAPI]);
 
   const scale =
     frame.width > frame.height
-      ? canvasWidth / frame.width
-      : canvasHeight / frame.height;
+      ? presentationWidth / frame.width
+      : presentationHeight / frame.height;
 
   const positionedElements = useMemo(
     () =>
@@ -70,13 +79,46 @@ export function PresentationScene(props: {
     );
   }, [excalidrawAPI, positionedElements, scale]);
 
+  const [divWidthPercentage, setDivWidthPercentage] = useState(1);
+  const [divHeightPercentage, setDivHeightPercentage] = useState(1);
+
+  useEffect(() => {
+    setDivWidthPercentage(((frame.width * scale) / presentationWidth) * 100);
+  }, [presentationWidth, frame.width, scale]);
+
+  useEffect(() => {
+    setDivHeightPercentage(((frame.height * scale) / presentationHeight) * 100);
+  }, [presentationHeight, frame.height, scale]);
+
+  console.log({
+    scale,
+    presentationWidth,
+    presentationHeight,
+    divWidthPercentage,
+    divHeightPercentage,
+    frameWidth: frame.width,
+    frameHeight: frame.height,
+  });
+
   return (
-    <Excalidraw
-      initialData={{ elements: positionedElements }}
-      excalidrawAPI={loadExcalidrawAPI}
-      viewModeEnabled
-      presentationModeEnabled
-    />
+    <div
+      ref={presentationSceneDiv}
+      style={{ width: "100%", height: "100%", background: "black" }}
+    >
+      <div
+        style={{
+          width: `${divWidthPercentage}%`,
+          height: `${divHeightPercentage}%`,
+        }}
+      >
+        <Excalidraw
+          initialData={{ elements: positionedElements }}
+          excalidrawAPI={loadExcalidrawAPI}
+          viewModeEnabled
+          presentationModeEnabled
+        />
+      </div>
+    </div>
   );
 }
 
