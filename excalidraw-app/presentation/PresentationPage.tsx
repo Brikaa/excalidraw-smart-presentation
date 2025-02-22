@@ -43,25 +43,32 @@ export function PresentationScene(props: {
     };
   }, [excalidrawAPI]);
 
+  const scale =
+    frame.width > frame.height
+      ? canvasWidth / frame.width
+      : canvasHeight / frame.height;
+
   const positionedElements = useMemo(
     () =>
       frameElements.map((e) => ({
         ...e,
-        x: e.x - frame.x,
-        y: e.y - frame.y,
-        height: e.height * (canvasHeight / Math.max(frame.width, frame.height)),
-        width: e.width * (canvasWidth / Math.max(frame.width, frame.height)),
+        x: (e.x - frame.x) * scale,
+        y: (e.y - frame.y) * scale,
+        height: e.height * scale,
+        width: e.width * scale,
       })),
-    [
-      canvasHeight,
-      canvasWidth,
-      frame.height,
-      frame.width,
-      frame.x,
-      frame.y,
-      frameElements,
-    ],
+    [frame.x, frame.y, frameElements, scale],
   );
+
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    setTimeout(
+      () => excalidrawAPI.updateScene({ elements: positionedElements }),
+      0,
+    );
+  }, [excalidrawAPI, positionedElements, scale]);
 
   return (
     <Excalidraw
