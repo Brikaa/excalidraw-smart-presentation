@@ -20,13 +20,6 @@ export function PresentationScene(props: {
   frame: ExcalidrawFrameElement;
 }) {
   const { elements, frame } = props;
-  const frameElements = useMemo(
-    () => elements.filter((e) => e.frameId === frame?.id),
-    [elements, frame?.id],
-  );
-
-  const [presentationWidth, setPresentationWidth] = useState(1);
-  const [presentationHeight, setPresentationHeight] = useState(1);
 
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
@@ -35,24 +28,18 @@ export function PresentationScene(props: {
     [],
   );
 
-  const fileIds = useMemo(() => {
+  // Load files (e.g, images)
+  useEffect(() => {
     if (!excalidrawAPI) {
-      return [];
+      return;
     }
-    return (
+    const fileIds =
       excalidrawAPI.getSceneElements().reduce((acc, element) => {
         if (isInitializedImageElement(element)) {
           return acc.concat(element.fileId);
         }
         return acc;
-      }, [] as FileId[]) || []
-    );
-  }, [excalidrawAPI]);
-
-  useEffect(() => {
-    if (!excalidrawAPI) {
-      return;
-    }
+      }, [] as FileId[]) || [];
     LocalData.fileStorage
       .getFiles(fileIds)
       .then(({ loadedFiles, erroredFiles }) => {
@@ -65,9 +52,13 @@ export function PresentationScene(props: {
           elements: excalidrawAPI.getSceneElementsIncludingDeleted(),
         });
       });
-  }, [excalidrawAPI, fileIds]);
+  }, [excalidrawAPI]);
+
+  // Presentation div adjustments, and adjusting scale based on div size
 
   const presentationSceneDiv = useRef<HTMLDivElement>(null);
+  const [presentationWidth, setPresentationWidth] = useState(1);
+  const [presentationHeight, setPresentationHeight] = useState(1);
 
   useEffect(() => {
     if (!excalidrawAPI) {
@@ -93,6 +84,11 @@ export function PresentationScene(props: {
   const scale = Math.min(
     presentationWidth / frame.width,
     presentationHeight / frame.height,
+  );
+
+  const frameElements = useMemo(
+    () => elements.filter((e) => e.frameId === frame?.id),
+    [elements, frame?.id],
   );
 
   const positionedElements = useMemo(
