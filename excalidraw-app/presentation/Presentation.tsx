@@ -67,8 +67,9 @@ export function Presentation(props: {
         return;
       }
       const newElements = elements.map((e) =>
-        e.customData?.name === undefined
-          ? { ...e, customData: { name: e.id } }
+        e.customData?.name === undefined &&
+        (e.type !== "image" || e.status !== "pending")
+          ? { ...e, customData: { ...e.customData, name: e.id } }
           : e,
       );
       prevElementsCount.current = elements.length;
