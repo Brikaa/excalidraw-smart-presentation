@@ -4,12 +4,16 @@ import { Excalidraw } from "../../packages/excalidraw";
 import type {
   ExcalidrawElement,
   ExcalidrawFrameElement,
+  FileId,
 } from "../../packages/excalidraw/element/types";
 import type {
   ExcalidrawImperativeAPI,
   NormalizedZoomValue,
 } from "../../packages/excalidraw/types";
 import { supportsResizeObserver } from "../../packages/excalidraw/constants";
+import { isInitializedImageElement } from "../../packages/excalidraw/element/typeChecks";
+import { LocalData } from "../data/LocalData";
+import { updateStaleImageStatuses } from "../data/FileManager";
 
 export function PresentationScene(props: {
   elements: ExcalidrawElement[];
@@ -30,6 +34,38 @@ export function PresentationScene(props: {
     (api: ExcalidrawImperativeAPI) => setExcalidrawAPI(api),
     [],
   );
+
+  const fileIds = useMemo(() => {
+    if (!excalidrawAPI) {
+      return [];
+    }
+    return (
+      excalidrawAPI.getSceneElements().reduce((acc, element) => {
+        if (isInitializedImageElement(element)) {
+          return acc.concat(element.fileId);
+        }
+        return acc;
+      }, [] as FileId[]) || []
+    );
+  }, [excalidrawAPI]);
+
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    LocalData.fileStorage
+      .getFiles(fileIds)
+      .then(({ loadedFiles, erroredFiles }) => {
+        if (loadedFiles.length) {
+          excalidrawAPI.addFiles(loadedFiles);
+        }
+        updateStaleImageStatuses({
+          excalidrawAPI,
+          erroredFiles,
+          elements: excalidrawAPI.getSceneElementsIncludingDeleted(),
+        });
+      });
+  }, [excalidrawAPI, fileIds]);
 
   const presentationSceneDiv = useRef<HTMLDivElement>(null);
 
@@ -76,12 +112,11 @@ export function PresentationScene(props: {
     setTimeout(
       () =>
         excalidrawAPI.updateScene({
-          elements: positionedElements,
           appState: { zoom: { value: scale as NormalizedZoomValue } },
         }),
       0,
     );
-  }, [excalidrawAPI, positionedElements, scale]);
+  }, [excalidrawAPI, scale]);
 
   const [divWidthPercentage, setDivWidthPercentage] = useState(1);
   const [divHeightPercentage, setDivHeightPercentage] = useState(1);
