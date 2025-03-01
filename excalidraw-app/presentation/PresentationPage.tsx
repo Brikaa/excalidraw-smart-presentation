@@ -38,7 +38,6 @@ export function PresentationScene(props: {
         x: e.x - newFrame.x,
         y: e.y - newFrame.y,
       }));
-      // We want the height, the width, or both to exactly fit the screen
       setFrameIndex(newFrameIndex);
       setTimeout(() => api.updateScene({ elements: newPositionedElements }), 0);
     },
@@ -83,6 +82,7 @@ export function PresentationScene(props: {
   const presentationSceneDiv = useRef<HTMLDivElement>(null);
   const [presentationWidth, setPresentationWidth] = useState(1);
   const [presentationHeight, setPresentationHeight] = useState(1);
+  // We want the height, the width, or both to exactly fit the screen
   const scale = Math.min(
     presentationWidth / frames[frameIndex].width,
     presentationHeight / frames[frameIndex].height,
@@ -108,8 +108,6 @@ export function PresentationScene(props: {
       resizeObserver?.disconnect();
     };
   }, [excalidrawAPI, frameIndex, frames]);
-
-  // Event listeners and animations
 
   // Update zoom whenever scale changes
   useEffect(() => {
