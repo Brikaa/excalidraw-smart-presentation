@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { importFromLocalStorage } from "../data/localStorage";
-import { Excalidraw } from "../../packages/excalidraw";
+import { Excalidraw } from "@excalidraw/excalidraw";
 import type {
   ExcalidrawElement,
   ExcalidrawFrameElement,
   FileId,
-} from "../../packages/excalidraw/element/types";
+} from "@excalidraw/excalidraw/element/types";
 import type {
   ExcalidrawImperativeAPI,
   NormalizedZoomValue,
-} from "../../packages/excalidraw/types";
-import { supportsResizeObserver } from "../../packages/excalidraw/constants";
-import { isInitializedImageElement } from "../../packages/excalidraw/element/typeChecks";
+} from "@excalidraw/excalidraw/types";
+import { supportsResizeObserver } from "@excalidraw/excalidraw/constants";
+import { isInitializedImageElement } from "@excalidraw/excalidraw/element/typeChecks";
 import { LocalData } from "../data/LocalData";
 import { updateStaleImageStatuses } from "../data/FileManager";
 
