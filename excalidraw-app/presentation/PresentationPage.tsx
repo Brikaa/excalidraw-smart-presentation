@@ -82,9 +82,6 @@ export function PresentationScene(props: {
     };
   }, [excalidrawAPI]);
 
-  const [positionedElements, setPositionedElements] = useState<
-    ExcalidrawElement[]
-  >([]);
   const [scale, setScale] = useState(1);
   const [frameIndex, setFrameIndex] = useState(initialFrameIndex);
 
@@ -102,15 +99,8 @@ export function PresentationScene(props: {
     );
   }, [excalidrawAPI, scale]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key !== KEYS.ARROW_RIGHT) {
-        return;
-      }
-      if (frameIndex === frames.length + 1) {
-        return;
-      }
-      const newFrameIndex = frameIndex + 1;
+  const renderFrame = useCallback(
+    (newFrameIndex: number) => {
       const newFrame = frames[newFrameIndex];
       const newFrameElements = elements.filter(
         (e) => e.frameId === newFrame.id,
@@ -126,10 +116,27 @@ export function PresentationScene(props: {
         presentationHeight / newFrame.height,
       );
       setFrameIndex(newFrameIndex);
-      setPositionedElements(newPositionedElements);
       setScale(newScale);
+      setTimeout(
+        () => excalidrawAPI?.updateScene({ elements: newPositionedElements }),
+        0,
+      );
     },
-    [elements, frameIndex, frames, presentationHeight, presentationWidth],
+    [elements, excalidrawAPI, frames, presentationHeight, presentationWidth],
+  );
+
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key !== KEYS.ARROW_RIGHT) {
+        return;
+      }
+      if (frameIndex === frames.length + 1) {
+        return;
+      }
+      const newFrameIndex = frameIndex + 1;
+      renderFrame(newFrameIndex);
+    },
+    [frameIndex, frames.length, renderFrame],
   );
 
   useEffect(() => {
@@ -138,6 +145,11 @@ export function PresentationScene(props: {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  // Initial frame
+  useEffect(() => {
+    renderFrame(initialFrameIndex);
+  }, [initialFrameIndex, renderFrame]);
 
   // Render
   return (
@@ -160,7 +172,6 @@ export function PresentationScene(props: {
         }}
       >
         <Excalidraw
-          initialData={{ elements: positionedElements }}
           excalidrawAPI={loadExcalidrawAPI}
           viewModeEnabled
           presentationModeEnabled
@@ -172,12 +183,18 @@ export function PresentationScene(props: {
 
 export function PresentationPage() {
   const { elements } = importFromLocalStorage();
-
-  // Get first frame
-  const frames = useMemo(
-    () =>
-      elements.filter((e): e is ExcalidrawFrameElement => e.type === "frame"),
+  const nonDeleted = useMemo(
+    () => elements.filter((e) => !e.isDeleted),
     [elements],
   );
-  return <PresentationScene elements={elements} frames={frames} />;
+
+  // Get first frame
+  const frames = useMemo(() => {
+    const res = nonDeleted.filter(
+      (e): e is ExcalidrawFrameElement => e.type === "frame",
+    );
+    res.sort((e1, e2) => e1.y - e2.y);
+    return res;
+  }, [nonDeleted]);
+  return <PresentationScene elements={nonDeleted} frames={frames} />;
 }
