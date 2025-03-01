@@ -128,14 +128,12 @@ export function PresentationScene(props: {
       if (!excalidrawAPI) {
         return;
       }
-      if (e.key !== KEYS.ARROW_RIGHT) {
-        return;
+      if (e.key === KEYS.ARROW_RIGHT && frameIndex !== frames.length - 1) {
+        renderFrame(frameIndex + 1, excalidrawAPI);
       }
-      if (frameIndex === frames.length + 1) {
-        return;
+      if (e.key === KEYS.ARROW_LEFT && frameIndex !== 0) {
+        renderFrame(frameIndex - 1, excalidrawAPI);
       }
-      const newFrameIndex = frameIndex + 1;
-      renderFrame(newFrameIndex, excalidrawAPI);
     },
     [excalidrawAPI, frameIndex, frames.length, renderFrame],
   );
