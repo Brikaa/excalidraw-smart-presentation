@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
-import type { ExcalidrawImperativeAPI } from "../../packages/excalidraw/types";
-import { convertToExcalidrawElements } from "../../packages/excalidraw";
+import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import { convertToExcalidrawElements } from "@excalidraw/excalidraw";
 
 const RE_PRESENTATION_LINK = /^#presentation$/;
 
