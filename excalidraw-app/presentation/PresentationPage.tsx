@@ -22,13 +22,17 @@ export function PresentationScene(props: {
   initialFrameIndex?: number;
 }) {
   const { elements, frames, initialFrameIndex = 0 } = props;
+  const [loadedInitialFrame, setLoadedInitialFrame] = useState(false);
   const [frameIndex, setFrameIndex] = useState(initialFrameIndex);
 
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
 
   const renderFrame = useCallback(
-    (newFrameIndex: number, api: ExcalidrawImperativeAPI) => {
+    (newFrameIndex: number) => {
+      if (!excalidrawAPI) {
+        return;
+      }
       const newFrame = frames[newFrameIndex];
       const newFrameElements = elements.filter(
         (e) => e.frameId === newFrame.id,
@@ -39,26 +43,30 @@ export function PresentationScene(props: {
         y: e.y - newFrame.y,
       }));
       setFrameIndex(newFrameIndex);
-      setTimeout(() => api.updateScene({ elements: newPositionedElements }), 0);
+      setTimeout(
+        () => excalidrawAPI.updateScene({ elements: newPositionedElements }),
+        0,
+      );
     },
-    [elements, frames],
+    [elements, excalidrawAPI, frames],
   );
 
-  const loadExcalidrawAPI = useCallback(
-    (api: ExcalidrawImperativeAPI) => {
-      setExcalidrawAPI(api);
-      renderFrame(frameIndex, api);
-    },
-    [frameIndex, renderFrame],
-  );
+  // Render initial frame
+  useEffect(() => {
+    if (loadedInitialFrame || !excalidrawAPI) {
+      return;
+    }
+    renderFrame(initialFrameIndex);
+    setLoadedInitialFrame(true);
+  }, [excalidrawAPI, initialFrameIndex, loadedInitialFrame, renderFrame]);
 
-  // Load files (e.g, images)
+  // Load files (e.g, images) on elements change
   useEffect(() => {
     if (!excalidrawAPI) {
       return;
     }
     const fileIds =
-      excalidrawAPI.getSceneElements().reduce((acc, element) => {
+      elements.reduce((acc, element) => {
         if (isInitializedImageElement(element)) {
           return acc.concat(element.fileId);
         }
@@ -73,10 +81,10 @@ export function PresentationScene(props: {
         updateStaleImageStatuses({
           excalidrawAPI,
           erroredFiles,
-          elements: excalidrawAPI.getSceneElementsIncludingDeleted(),
+          elements,
         });
       });
-  }, [excalidrawAPI]);
+  }, [elements, excalidrawAPI]);
 
   // Presentation div observer to know by how much we need to zoom in
   const presentationSceneDiv = useRef<HTMLDivElement>(null);
@@ -125,17 +133,14 @@ export function PresentationScene(props: {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!excalidrawAPI) {
-        return;
-      }
       if (e.key === KEYS.ARROW_RIGHT && frameIndex !== frames.length - 1) {
-        renderFrame(frameIndex + 1, excalidrawAPI);
+        renderFrame(frameIndex + 1);
       }
       if (e.key === KEYS.ARROW_LEFT && frameIndex !== 0) {
-        renderFrame(frameIndex - 1, excalidrawAPI);
+        renderFrame(frameIndex - 1);
       }
     },
-    [excalidrawAPI, frameIndex, frames.length, renderFrame],
+    [frameIndex, frames.length, renderFrame],
   );
 
   useEffect(() => {
@@ -144,6 +149,10 @@ export function PresentationScene(props: {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  const loadExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
+    setExcalidrawAPI(api);
+  }, []);
 
   // Render
   return (
