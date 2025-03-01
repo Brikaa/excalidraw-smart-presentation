@@ -22,12 +22,35 @@ export function PresentationScene(props: {
   initialFrameIndex?: number;
 }) {
   const { elements, frames, initialFrameIndex = 0 } = props;
+  const [frameIndex, setFrameIndex] = useState(initialFrameIndex);
 
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
+
+  const renderFrame = useCallback(
+    (newFrameIndex: number, api: ExcalidrawImperativeAPI) => {
+      const newFrame = frames[newFrameIndex];
+      const newFrameElements = elements.filter(
+        (e) => e.frameId === newFrame.id,
+      );
+      const newPositionedElements = newFrameElements.map((e) => ({
+        ...e,
+        x: e.x - newFrame.x,
+        y: e.y - newFrame.y,
+      }));
+      // We want the height, the width, or both to exactly fit the screen
+      setFrameIndex(newFrameIndex);
+      setTimeout(() => api.updateScene({ elements: newPositionedElements }), 0);
+    },
+    [elements, frames],
+  );
+
   const loadExcalidrawAPI = useCallback(
-    (api: ExcalidrawImperativeAPI) => setExcalidrawAPI(api),
-    [],
+    (api: ExcalidrawImperativeAPI) => {
+      setExcalidrawAPI(api);
+      renderFrame(frameIndex, api);
+    },
+    [frameIndex, renderFrame],
   );
 
   // Load files (e.g, images)
@@ -60,6 +83,10 @@ export function PresentationScene(props: {
   const presentationSceneDiv = useRef<HTMLDivElement>(null);
   const [presentationWidth, setPresentationWidth] = useState(1);
   const [presentationHeight, setPresentationHeight] = useState(1);
+  const scale = Math.min(
+    presentationWidth / frames[frameIndex].width,
+    presentationHeight / frames[frameIndex].height,
+  );
 
   useEffect(() => {
     if (!excalidrawAPI) {
@@ -80,10 +107,7 @@ export function PresentationScene(props: {
     return () => {
       resizeObserver?.disconnect();
     };
-  }, [excalidrawAPI]);
-
-  const [scale, setScale] = useState(1);
-  const [frameIndex, setFrameIndex] = useState(initialFrameIndex);
+  }, [excalidrawAPI, frameIndex, frames]);
 
   // Event listeners and animations
 
@@ -101,37 +125,11 @@ export function PresentationScene(props: {
     );
   }, [excalidrawAPI, scale]);
 
-  const renderFrame = useCallback(
-    (newFrameIndex: number) => {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
       if (!excalidrawAPI) {
         return;
       }
-      const newFrame = frames[newFrameIndex];
-      const newFrameElements = elements.filter(
-        (e) => e.frameId === newFrame.id,
-      );
-      const newPositionedElements = newFrameElements.map((e) => ({
-        ...e,
-        x: e.x - newFrame.x,
-        y: e.y - newFrame.y,
-      }));
-      // We want the height, the width, or both to exactly fit the screen
-      const newScale = Math.min(
-        presentationWidth / newFrame.width,
-        presentationHeight / newFrame.height,
-      );
-      setFrameIndex(newFrameIndex);
-      setScale(newScale);
-      setTimeout(
-        () => excalidrawAPI.updateScene({ elements: newPositionedElements }),
-        0,
-      );
-    },
-    [elements, excalidrawAPI, frames, presentationHeight, presentationWidth],
-  );
-
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
       if (e.key !== KEYS.ARROW_RIGHT) {
         return;
       }
@@ -139,9 +137,9 @@ export function PresentationScene(props: {
         return;
       }
       const newFrameIndex = frameIndex + 1;
-      renderFrame(newFrameIndex);
+      renderFrame(newFrameIndex, excalidrawAPI);
     },
-    [frameIndex, frames.length, renderFrame],
+    [excalidrawAPI, frameIndex, frames.length, renderFrame],
   );
 
   useEffect(() => {
