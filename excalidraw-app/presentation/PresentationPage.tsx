@@ -81,11 +81,6 @@ export function PresentationScene(props: {
     };
   }, [excalidrawAPI]);
 
-  const scale = Math.min(
-    presentationWidth / frame.width,
-    presentationHeight / frame.height,
-  );
-
   const frameElements = useMemo(
     () => elements.filter((e) => e.frameId === frame?.id),
     [elements, frame?.id],
@@ -101,6 +96,11 @@ export function PresentationScene(props: {
     [frame.x, frame.y, frameElements],
   );
 
+  const scale = Math.min(
+    presentationWidth / frame.width,
+    presentationHeight / frame.height,
+  );
+
   useEffect(() => {
     if (!excalidrawAPI) {
       return;
@@ -113,17 +113,6 @@ export function PresentationScene(props: {
       0,
     );
   }, [excalidrawAPI, scale]);
-
-  const [divWidthPercentage, setDivWidthPercentage] = useState(1);
-  const [divHeightPercentage, setDivHeightPercentage] = useState(1);
-
-  useEffect(() => {
-    setDivWidthPercentage(((frame.width * scale) / presentationWidth) * 100);
-  }, [presentationWidth, frame.width, scale]);
-
-  useEffect(() => {
-    setDivHeightPercentage(((frame.height * scale) / presentationHeight) * 100);
-  }, [presentationHeight, frame.height, scale]);
 
   return (
     <div
@@ -138,8 +127,8 @@ export function PresentationScene(props: {
     >
       <div
         style={{
-          width: `${divWidthPercentage}%`,
-          height: `${divHeightPercentage}%`,
+          width: `${frame.width * scale}px`,
+          height: `${frame.height * scale}px`,
         }}
       >
         <Excalidraw
