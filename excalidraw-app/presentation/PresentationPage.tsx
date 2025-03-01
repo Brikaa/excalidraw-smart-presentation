@@ -86,6 +86,8 @@ export function PresentationScene(props: {
   const [frameIndex, setFrameIndex] = useState(initialFrameIndex);
 
   // Event listeners and animations
+
+  // Update zoom whenever scale changes
   useEffect(() => {
     if (!excalidrawAPI) {
       return;
@@ -101,6 +103,9 @@ export function PresentationScene(props: {
 
   const renderFrame = useCallback(
     (newFrameIndex: number) => {
+      if (!excalidrawAPI) {
+        return;
+      }
       const newFrame = frames[newFrameIndex];
       const newFrameElements = elements.filter(
         (e) => e.frameId === newFrame.id,
@@ -118,7 +123,7 @@ export function PresentationScene(props: {
       setFrameIndex(newFrameIndex);
       setScale(newScale);
       setTimeout(
-        () => excalidrawAPI?.updateScene({ elements: newPositionedElements }),
+        () => excalidrawAPI.updateScene({ elements: newPositionedElements }),
         0,
       );
     },
@@ -145,11 +150,6 @@ export function PresentationScene(props: {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleKeyDown]);
-
-  // Initial frame
-  useEffect(() => {
-    renderFrame(initialFrameIndex);
-  }, [initialFrameIndex, renderFrame]);
 
   // Render
   return (
