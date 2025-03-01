@@ -12,14 +12,16 @@ import type {
 } from "@excalidraw/excalidraw/types";
 import { supportsResizeObserver } from "@excalidraw/excalidraw/constants";
 import { isInitializedImageElement } from "@excalidraw/excalidraw/element/typeChecks";
+import { KEYS } from "@excalidraw/excalidraw/keys";
 import { LocalData } from "../data/LocalData";
 import { updateStaleImageStatuses } from "../data/FileManager";
 
 export function PresentationScene(props: {
   elements: ExcalidrawElement[];
-  frame: ExcalidrawFrameElement;
+  frames: ExcalidrawFrameElement[];
+  initialFrameIndex?: number;
 }) {
-  const { elements, frame } = props;
+  const { elements, frames, initialFrameIndex = 0 } = props;
 
   const [excalidrawAPI, setExcalidrawAPI] =
     useState<ExcalidrawImperativeAPI | null>(null);
@@ -54,8 +56,7 @@ export function PresentationScene(props: {
       });
   }, [excalidrawAPI]);
 
-  // Presentation div adjustments, and adjusting scale based on div size
-
+  // Presentation div observer to know by how much we need to zoom in
   const presentationSceneDiv = useRef<HTMLDivElement>(null);
   const [presentationWidth, setPresentationWidth] = useState(1);
   const [presentationHeight, setPresentationHeight] = useState(1);
@@ -81,26 +82,13 @@ export function PresentationScene(props: {
     };
   }, [excalidrawAPI]);
 
-  const frameElements = useMemo(
-    () => elements.filter((e) => e.frameId === frame?.id),
-    [elements, frame?.id],
-  );
+  const [positionedElements, setPositionedElements] = useState<
+    ExcalidrawElement[]
+  >([]);
+  const [scale, setScale] = useState(1);
+  const [frameIndex, setFrameIndex] = useState(initialFrameIndex);
 
-  const positionedElements = useMemo(
-    () =>
-      frameElements.map((e) => ({
-        ...e,
-        x: e.x - frame.x,
-        y: e.y - frame.y,
-      })),
-    [frame.x, frame.y, frameElements],
-  );
-
-  const scale = Math.min(
-    presentationWidth / frame.width,
-    presentationHeight / frame.height,
-  );
-
+  // Event listeners and animations
   useEffect(() => {
     if (!excalidrawAPI) {
       return;
@@ -114,6 +102,44 @@ export function PresentationScene(props: {
     );
   }, [excalidrawAPI, scale]);
 
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (e.key !== KEYS.ARROW_RIGHT) {
+        return;
+      }
+      if (frameIndex === frames.length + 1) {
+        return;
+      }
+      const newFrameIndex = frameIndex + 1;
+      const newFrame = frames[newFrameIndex];
+      const newFrameElements = elements.filter(
+        (e) => e.frameId === newFrame.id,
+      );
+      const newPositionedElements = newFrameElements.map((e) => ({
+        ...e,
+        x: e.x - newFrame.x,
+        y: e.y - newFrame.y,
+      }));
+      // We want the height, the width, or both to exactly fit the screen
+      const newScale = Math.min(
+        presentationWidth / newFrame.width,
+        presentationHeight / newFrame.height,
+      );
+      setFrameIndex(newFrameIndex);
+      setPositionedElements(newPositionedElements);
+      setScale(newScale);
+    },
+    [elements, frameIndex, frames, presentationHeight, presentationWidth],
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
+  // Render
   return (
     <div
       ref={presentationSceneDiv}
@@ -125,10 +151,12 @@ export function PresentationScene(props: {
         placeItems: "center",
       }}
     >
+      {/* We want the canvas to be in a div that has the exact same size as the scaled (zoomed in) frame */}
+      {/* The rest is going to be black */}
       <div
         style={{
-          width: `${frame.width * scale}px`,
-          height: `${frame.height * scale}px`,
+          width: `${frames[frameIndex].width * scale}px`,
+          height: `${frames[frameIndex].height * scale}px`,
         }}
       >
         <Excalidraw
@@ -146,12 +174,10 @@ export function PresentationPage() {
   const { elements } = importFromLocalStorage();
 
   // Get first frame
-  const frame = useMemo(
-    () => elements.find((e): e is ExcalidrawFrameElement => e.type === "frame"),
+  const frames = useMemo(
+    () =>
+      elements.filter((e): e is ExcalidrawFrameElement => e.type === "frame"),
     [elements],
   );
-  if (!frame) {
-    return null;
-  }
-  return <PresentationScene elements={elements} frame={frame} />;
+  return <PresentationScene elements={elements} frames={frames} />;
 }
