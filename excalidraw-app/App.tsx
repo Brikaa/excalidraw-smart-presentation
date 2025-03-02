@@ -132,8 +132,8 @@ import DebugCanvas, {
 import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 import { isElementLink } from "@excalidraw/excalidraw/element/elementLink";
+import { DuplicationHandler } from "./presentation/DuplicationHandler";
 import { isPresentationLink, Presentation } from "./presentation/Presentation";
-import { PresentationPage } from "./presentation/PresentationPage";
 
 polyfill();
 
@@ -912,7 +912,7 @@ const ExcalidrawWrapper = () => {
         {excalidrawAPI && !isCollabDisabled && (
           <Collab excalidrawAPI={excalidrawAPI} />
         )}
-        {excalidrawAPI && <Presentation excalidrawAPI={excalidrawAPI} />}
+        {excalidrawAPI && <DuplicationHandler excalidrawAPI={excalidrawAPI} />}
 
         <ShareDialog
           collabAPI={collabAPI}
@@ -1152,7 +1152,7 @@ const ExcalidrawApp = () => {
   return (
     <TopErrorBoundary>
       <Provider store={appJotaiStore}>
-        {(!presentation && <ExcalidrawWrapper />) || <PresentationPage />}
+        {(!presentation && <ExcalidrawWrapper />) || <Presentation />}
       </Provider>
     </TopErrorBoundary>
   );
