@@ -17,14 +17,14 @@ const ANIMATABLE_PROPERTIES = new Map<
 ]);
 
 const progressAnimation = (
-  oldElement: ExcalidrawElement | null,
-  newElement: ExcalidrawElement | null,
+  oldElement: ExcalidrawElement | undefined,
+  newElement: ExcalidrawElement | undefined,
   progress: number,
-): ExcalidrawElement | null => {
+): ExcalidrawElement | undefined => {
   // If no old element, fade in new element
-  if (oldElement === null) {
-    if (newElement === null) {
-      return null;
+  if (oldElement === undefined) {
+    if (newElement === undefined) {
+      return undefined;
     }
     oldElement = {
       ...newElement,
@@ -33,9 +33,9 @@ const progressAnimation = (
   }
 
   // if no new element, fade out or remove old element
-  if (newElement === null) {
-    if (oldElement === null || progress === 1) {
-      return null;
+  if (newElement === undefined) {
+    if (oldElement === undefined || progress === 1) {
+      return undefined;
     }
     newElement = {
       ...oldElement,
@@ -44,19 +44,19 @@ const progressAnimation = (
   }
 
   // animate animatable properties
-  const intermediateElement: any = {};
+  const intermediate: any = {};
   for (const key of Object.keys(newElement) as Array<keyof ExcalidrawElement>) {
     if (ANIMATABLE_PROPERTIES.has(key)) {
-      intermediateElement[key] = ANIMATABLE_PROPERTIES.get(key)!(
+      intermediate[key] = ANIMATABLE_PROPERTIES.get(key)!(
         oldElement[key],
         newElement[key],
         progress,
       );
     } else {
-      intermediateElement[key] = newElement[key];
+      intermediate[key] = newElement[key];
     }
   }
-  return intermediateElement;
+  return intermediate;
 };
 
 let startTime: number | null = null;
@@ -66,30 +66,34 @@ export const animate = (
   timestamp: number,
   excalidrawAPI: ExcalidrawImperativeAPI,
   oldElements: Map<string, ExcalidrawElement>,
-  newElements: ExcalidrawElement[],
+  newElements: Map<string, ExcalidrawElement>,
 ) => {
   if (!startTime) {
     startTime = timestamp;
   }
   const elapsed = timestamp - startTime;
   const progress = Math.min(elapsed / ANIMATION_DURATION_MS, 1);
-  const intermediateElements = newElements.map((element) => {
-    if (
-      element.customData?.name !== undefined &&
-      oldElements.has(element.customData.name)
-    ) {
-      const oldElement = oldElements.get(element.customData.name)!;
-      return progressAnimation(oldElement, element, progress);
+
+  const names = new Set([...oldElements.keys(), ...newElements.keys()]);
+  const intermediateElements: ExcalidrawElement[] = [];
+
+  for (const name of names) {
+    const oldEl = oldElements.get(name);
+    const newEl = newElements.get(name);
+    const intermediate = progressAnimation(oldEl, newEl, progress);
+    if (intermediate) {
+      intermediateElements.push(intermediate);
     }
-    return progressAnimation(null, element, progress);
-  });
+  }
+
   excalidrawAPI.updateScene({ elements: intermediateElements });
 
   if (progress < 1) {
-    requestAnimationFrame((timestamp) =>
-      animate(timestamp, excalidrawAPI, oldElements, newElements),
+    requestAnimationFrame((ts) =>
+      animate(ts, excalidrawAPI, oldElements, newElements),
     );
   } else {
+    // Reset for the next animation
     startTime = null;
   }
 };
