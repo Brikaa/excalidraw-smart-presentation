@@ -15,6 +15,7 @@ import { isInitializedImageElement } from "@excalidraw/excalidraw/element/typeCh
 import { KEYS } from "@excalidraw/excalidraw/keys";
 import { LocalData } from "../data/LocalData";
 import { updateStaleImageStatuses } from "../data/FileManager";
+import { animate } from "excalidraw-app/presentation/animation";
 
 const RE_PRESENTATION_LINK = /^#presentation$/;
 
@@ -22,6 +23,20 @@ export const isPresentationLink = (link: string) => {
   const hash = new URL(link).hash;
   return RE_PRESENTATION_LINK.test(hash);
 };
+
+const getPositionedElementsForFrame = (
+  frame: ExcalidrawFrameElement,
+  allElements: ExcalidrawElement[],
+) =>
+  allElements
+    .filter((e) => e.frameId === frame.id)
+    .map((e) => ({
+      ...e,
+      x: e.x - frame.x,
+      y: e.y - frame.y,
+    }));
+
+const getElementKey = (e: ExcalidrawElement) => e.customData?.name ?? e.id;
 
 export function PresentationScene(props: {
   elements: ExcalidrawElement[];
@@ -41,21 +56,30 @@ export function PresentationScene(props: {
         return;
       }
       const newFrame = frames[newFrameIndex];
-      const newFrameElements = elements.filter(
-        (e) => e.frameId === newFrame.id,
+      const currentFrame = frames[frameIndex];
+
+      const oldFrameElements = getPositionedElementsForFrame(
+        currentFrame,
+        elements,
       );
-      const newPositionedElements = newFrameElements.map((e) => ({
-        ...e,
-        x: e.x - newFrame.x,
-        y: e.y - newFrame.y,
-      }));
+      const newFrameElements = getPositionedElementsForFrame(
+        newFrame,
+        elements,
+      );
+
+      const oldElementsMap = new Map(
+        oldFrameElements.map((e) => [getElementKey(e), e]),
+      );
+      const newElementsMap = new Map(
+        newFrameElements.map((e) => [getElementKey(e), e]),
+      );
+
       setFrameIndex(newFrameIndex);
-      setTimeout(
-        () => excalidrawAPI.updateScene({ elements: newPositionedElements }),
-        0,
+      requestAnimationFrame((timestamp) =>
+        animate(timestamp, excalidrawAPI, oldElementsMap, newElementsMap),
       );
     },
-    [elements, excalidrawAPI, frames],
+    [elements, excalidrawAPI, frameIndex, frames],
   );
 
   // Render initial frame
