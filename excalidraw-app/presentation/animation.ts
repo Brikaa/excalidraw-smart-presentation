@@ -33,6 +33,20 @@ const colorProgress = (
   return rgbToHex(r, g, b);
 };
 
+const angleProgress = (
+  oldAngle: number,
+  newAngle: number,
+  progress: number,
+): number => {
+  let diff = newAngle - oldAngle;
+  if (diff > Math.PI) {
+    diff -= 2 * Math.PI;
+  } else if (diff < -Math.PI) {
+    diff += 2 * Math.PI;
+  }
+  return oldAngle + diff * progress;
+};
+
 const numericalProgress = (oldNum: number, newNum: number, progress: number) =>
   oldNum + (newNum - oldNum) * progress;
 
@@ -46,7 +60,7 @@ const ANIMATABLE_PROPERTIES = new Map<
   ["height", numericalProgress],
   ["width", numericalProgress],
   ["strokeWidth", numericalProgress],
-  ["angle", numericalProgress],
+  ["angle", angleProgress],
   ["roughness", numericalProgress],
   ["backgroundColor", colorProgress],
   ["strokeColor", colorProgress],
