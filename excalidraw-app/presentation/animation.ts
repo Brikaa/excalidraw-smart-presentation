@@ -1,5 +1,37 @@
+import { rgbToHex } from "@excalidraw/excalidraw/colors";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+
+const hexToRgb = (hex: string) => {
+  const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  return match
+    ? {
+        r: parseInt(match[1], 16),
+        g: parseInt(match[2], 16),
+        b: parseInt(match[3], 16),
+      }
+    : null;
+};
+
+const colorProgress = (
+  oldColor: string,
+  newColor: string,
+  progress: number,
+) => {
+  const oldRgb = hexToRgb(oldColor);
+  const newRgb = hexToRgb(newColor);
+  if (!oldRgb || !newRgb) {
+    return oldColor;
+  }
+
+  const [r, g, b] = [
+    Math.round(numericalProgress(oldRgb.r, newRgb.r, progress)),
+    Math.round(numericalProgress(oldRgb.g, newRgb.g, progress)),
+    Math.round(numericalProgress(oldRgb.b, newRgb.b, progress)),
+  ];
+
+  return rgbToHex(r, g, b);
+};
 
 const numericalProgress = (oldNum: number, newNum: number, progress: number) =>
   oldNum + (newNum - oldNum) * progress;
@@ -14,6 +46,10 @@ const ANIMATABLE_PROPERTIES = new Map<
   ["height", numericalProgress],
   ["width", numericalProgress],
   ["strokeWidth", numericalProgress],
+  ["angle", numericalProgress],
+  ["roughness", numericalProgress],
+  ["backgroundColor", colorProgress],
+  ["strokeColor", colorProgress],
 ]);
 
 const progressAnimation = (
