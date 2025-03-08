@@ -149,9 +149,6 @@ export function PresentationScene(props: {
   );
 
   useEffect(() => {
-    if (!excalidrawAPI) {
-      return;
-    }
     let resizeObserver: ResizeObserver | null = null;
     if (supportsResizeObserver && presentationSceneDiv.current) {
       resizeObserver = new ResizeObserver(() => {
@@ -167,7 +164,7 @@ export function PresentationScene(props: {
     return () => {
       resizeObserver?.disconnect();
     };
-  }, [excalidrawAPI, frameIndex, frames]);
+  }, []);
 
   // Update zoom whenever scale changes
   useEffect(() => {
@@ -183,8 +180,9 @@ export function PresentationScene(props: {
     );
   }, [excalidrawAPI, scale]);
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
+  // Keydown event listeners
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (animationStartTime !== null) {
         // Do nothing when there is an active animation
         return;
@@ -195,16 +193,12 @@ export function PresentationScene(props: {
       if (e.key === KEYS.ARROW_LEFT && frameIndex !== 0) {
         renderFrame(frameIndex - 1);
       }
-    },
-    [frameIndex, frames.length, renderFrame],
-  );
-
-  useEffect(() => {
+    };
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [handleKeyDown]);
+  }, [frameIndex, frames.length, renderFrame]);
 
   const loadExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
     setExcalidrawAPI(api);
