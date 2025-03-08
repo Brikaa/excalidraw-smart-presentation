@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { importFromLocalStorage } from "../data/localStorage";
 import { Excalidraw } from "@excalidraw/excalidraw";
 import type {
   ExcalidrawElement,
@@ -241,20 +240,36 @@ export function PresentationScene(props: {
   );
 }
 
-export function Presentation() {
-  const { elements } = importFromLocalStorage();
-  const nonDeleted = useMemo(
-    () => elements.filter((e) => !e.isDeleted),
-    [elements],
-  );
+export const ELEMENTS_CHANNEL_NAME = "excalidraw-elements";
+export const NEED_DATA_MESSAGE = "NEED_DATA";
 
-  // Get first frame
+export function Presentation() {
+  const [elements, setElements] = useState<ExcalidrawElement[]>([]);
+  useEffect(() => {
+    const channel = new BroadcastChannel(ELEMENTS_CHANNEL_NAME);
+    const messageHandler = (
+      event: MessageEvent<{ elements: ExcalidrawElement[] } | string>,
+    ) => {
+      if (typeof event.data !== "string") {
+        setElements(event.data.elements);
+      }
+    };
+    channel.addEventListener("message", messageHandler);
+    channel.postMessage(NEED_DATA_MESSAGE);
+    return () => {
+      channel.removeEventListener("message", messageHandler);
+    };
+  }, []);
+
   const frames = useMemo(() => {
-    const res = nonDeleted.filter(
+    const res = elements.filter(
       (e): e is ExcalidrawFrameElement => e.type === "frame",
     );
     res.sort((e1, e2) => e1.y - e2.y);
     return res;
-  }, [nonDeleted]);
-  return <PresentationScene elements={nonDeleted} frames={frames} />;
+  }, [elements]);
+  if (frames.length === 0) {
+    return null;
+  }
+  return <PresentationScene elements={elements} frames={frames} />;
 }

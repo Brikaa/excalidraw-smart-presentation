@@ -133,7 +133,12 @@ import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
 import { isElementLink } from "@excalidraw/excalidraw/element/elementLink";
 import { DuplicationHandler } from "./presentation/DuplicationHandler";
-import { isPresentationLink, Presentation } from "./presentation/Presentation";
+import {
+  ELEMENTS_CHANNEL_NAME,
+  isPresentationLink,
+  NEED_DATA_MESSAGE,
+  Presentation,
+} from "./presentation/Presentation";
 
 polyfill();
 
@@ -610,6 +615,24 @@ const ExcalidrawWrapper = () => {
     window.addEventListener(EVENT.BEFORE_UNLOAD, unloadHandler);
     return () => {
       window.removeEventListener(EVENT.BEFORE_UNLOAD, unloadHandler);
+    };
+  }, [excalidrawAPI]);
+
+  useEffect(() => {
+    if (!excalidrawAPI) {
+      return;
+    }
+    const messageHandler = (event: MessageEvent<string>) => {
+      if (event.data === NEED_DATA_MESSAGE) {
+        channel.postMessage({
+          elements: excalidrawAPI?.getSceneElements(),
+        });
+      }
+    };
+    const channel = new BroadcastChannel(ELEMENTS_CHANNEL_NAME);
+    channel.addEventListener("message", messageHandler);
+    return () => {
+      channel.removeEventListener("message", messageHandler);
     };
   }, [excalidrawAPI]);
 
