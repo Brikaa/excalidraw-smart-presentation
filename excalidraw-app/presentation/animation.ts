@@ -95,7 +95,7 @@ const progressAnimation = (
   return intermediate;
 };
 
-let startTime: number | null = null;
+export let animationStartTime: number | null = null;
 const ANIMATION_DURATION_MS = 300;
 
 export const animate = (
@@ -104,10 +104,10 @@ export const animate = (
   oldElements: Map<string, ExcalidrawElement>,
   newElements: Map<string, ExcalidrawElement>,
 ) => {
-  if (!startTime) {
-    startTime = timestamp;
+  if (!animationStartTime) {
+    animationStartTime = timestamp;
   }
-  const elapsed = timestamp - startTime;
+  const elapsed = timestamp - animationStartTime;
   const progress = Math.min(elapsed / ANIMATION_DURATION_MS, 1);
 
   const names = new Set([...oldElements.keys(), ...newElements.keys()]);
@@ -130,6 +130,6 @@ export const animate = (
     );
   } else {
     // Reset for the next animation
-    startTime = null;
+    animationStartTime = null;
   }
 };

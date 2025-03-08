@@ -15,7 +15,10 @@ import { isInitializedImageElement } from "@excalidraw/excalidraw/element/typeCh
 import { KEYS } from "@excalidraw/excalidraw/keys";
 import { LocalData } from "../data/LocalData";
 import { updateStaleImageStatuses } from "../data/FileManager";
-import { animate } from "excalidraw-app/presentation/animation";
+import {
+  animate,
+  animationStartTime,
+} from "excalidraw-app/presentation/animation";
 
 const RE_PRESENTATION_LINK = /^#presentation$/;
 
@@ -183,6 +186,10 @@ export function PresentationScene(props: {
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
+      if (animationStartTime !== null) {
+        // Do nothing when there is an active animation
+        return;
+      }
       if (e.key === KEYS.ARROW_RIGHT && frameIndex !== frames.length - 1) {
         renderFrame(frameIndex + 1);
       }
