@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 export function DuplicationHandler(props: {
@@ -6,25 +6,26 @@ export function DuplicationHandler(props: {
 }) {
   const { excalidrawAPI } = props;
 
-  const prevElementsCount = useRef(0);
-
   useEffect(() => {
     const unsub = excalidrawAPI.onChange((elements, appState) => {
-      if (
-        !excalidrawAPI ||
-        elements.length === prevElementsCount.current ||
-        appState.newElement
-      ) {
+      if (appState.newElement) {
+        // Don't update scene while an element is being drag-created
         return;
       }
-      const newElements = elements.map((e) =>
-        e.customData?.name === undefined &&
-        (e.type !== "image" || e.status !== "pending")
-          ? { ...e, customData: { ...e.customData, name: e.id } }
-          : e,
-      );
-      prevElementsCount.current = elements.length;
-      excalidrawAPI.updateScene({ elements: newElements });
+      let changed = false;
+      const newElements = elements.map((e) => {
+        if (
+          e.customData?.name === undefined &&
+          (e.type !== "image" || e.status !== "pending")
+        ) {
+          changed = true;
+          return { ...e, customData: { ...e.customData, name: e.id } };
+        }
+        return e;
+      });
+      if (changed) {
+        excalidrawAPI.updateScene({ elements: newElements });
+      }
     });
     return () => {
       unsub();
