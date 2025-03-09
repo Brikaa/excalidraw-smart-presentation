@@ -192,9 +192,10 @@ export function PresentationScene(props: {
     );
   }, [excalidrawAPI, scale]);
 
-  // Keydown event listeners
+  // Event listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      e.stopPropagation();
       if (animationStartTime !== null) {
         // Do nothing when there is an active animation
         return;
@@ -206,9 +207,22 @@ export function PresentationScene(props: {
         renderFrame(frameIndex - 1);
       }
     };
-    document.addEventListener("keydown", handleKeyDown);
+
+    const handlePointerDownOrWheel = (e: MouseEvent | WheelEvent) => {
+      e.stopPropagation();
+    };
+
+    document.addEventListener("keydown", handleKeyDown, true);
+    document.addEventListener("pointerdown", handlePointerDownOrWheel, true);
+    document.addEventListener("wheel", handlePointerDownOrWheel, true);
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
+      document.removeEventListener(
+        "pointerdown",
+        handlePointerDownOrWheel,
+        true,
+      );
+      document.removeEventListener("wheel", handlePointerDownOrWheel, true);
     };
   }, [frameIndex, frames.length, renderFrame]);
 
