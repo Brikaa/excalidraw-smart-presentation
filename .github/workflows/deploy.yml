@@ -3,8 +3,7 @@ name: Build & Deploy to GitHub Pages
 on:
   push:
     branches:
-      - smart-presentation
-  workflow_dispatch:
+      - smart-presentations
 
 permissions:
   contents: read
@@ -37,7 +36,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build
-          path: build
+          path: excalidraw-app/build
 
   deploy:
     runs-on: ubuntu-latest
@@ -53,7 +52,7 @@ jobs:
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: excalidraw-app/build
+          name: build
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v2
