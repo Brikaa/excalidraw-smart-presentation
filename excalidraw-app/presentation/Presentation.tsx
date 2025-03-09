@@ -6,6 +6,7 @@ import type {
   FileId,
 } from "@excalidraw/excalidraw/element/types";
 import type {
+  AppState,
   ExcalidrawImperativeAPI,
   NormalizedZoomValue,
 } from "@excalidraw/excalidraw/types";
@@ -65,10 +66,11 @@ const buildElementMap = (
 
 export function PresentationScene(props: {
   elements: ExcalidrawElement[];
+  appState: Readonly<AppState>;
   frames: ExcalidrawFrameElement[];
   initialFrameIndex?: number;
 }) {
-  const { elements, frames, initialFrameIndex = 0 } = props;
+  const { appState, elements, frames, initialFrameIndex = 0 } = props;
   const [loadedInitialFrame, setLoadedInitialFrame] = useState(false);
   const [frameIndex, setFrameIndex] = useState(initialFrameIndex);
 
@@ -103,14 +105,24 @@ export function PresentationScene(props: {
     [elements, excalidrawAPI, frameIndex, frames],
   );
 
-  // Render initial frame
+  // Render initial frame and initial state
   useEffect(() => {
     if (loadedInitialFrame || !excalidrawAPI) {
       return;
     }
     renderFrame(initialFrameIndex);
+    setTimeout(
+      () => excalidrawAPI.updateScene({ appState: { theme: appState.theme } }),
+      0,
+    );
     setLoadedInitialFrame(true);
-  }, [excalidrawAPI, initialFrameIndex, loadedInitialFrame, renderFrame]);
+  }, [
+    appState,
+    excalidrawAPI,
+    initialFrameIndex,
+    loadedInitialFrame,
+    renderFrame,
+  ]);
 
   // Load files (e.g, images) on elements change
   useEffect(() => {
@@ -239,12 +251,16 @@ export const NEED_DATA_MESSAGE = "NEED_DATA";
 
 export function Presentation() {
   const [elements, setElements] = useState<ExcalidrawElement[]>([]);
+  const [appState, setAppState] = useState<Readonly<AppState | null>>();
   useEffect(() => {
     const channel = new BroadcastChannel(ELEMENTS_CHANNEL_NAME);
     const messageHandler = (
-      event: MessageEvent<{ elements: ExcalidrawElement[] } | string>,
+      event: MessageEvent<
+        { elements: ExcalidrawElement[]; appState: Readonly<AppState> } | string
+      >,
     ) => {
       if (typeof event.data !== "string") {
+        setAppState(event.data.appState);
         setElements(event.data.elements);
       }
     };
@@ -262,8 +278,14 @@ export function Presentation() {
     res.sort((e1, e2) => e1.y - e2.y);
     return res;
   }, [elements]);
-  if (frames.length === 0) {
+  if (frames.length === 0 || !appState) {
     return null;
   }
-  return <PresentationScene elements={elements} frames={frames} />;
+  return (
+    <PresentationScene
+      appState={appState}
+      elements={elements}
+      frames={frames}
+    />
+  );
 }

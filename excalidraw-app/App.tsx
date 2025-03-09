@@ -625,7 +625,8 @@ const ExcalidrawWrapper = () => {
     const messageHandler = (event: MessageEvent<string>) => {
       if (event.data === NEED_DATA_MESSAGE) {
         channel.postMessage({
-          elements: excalidrawAPI?.getSceneElements(),
+          elements: excalidrawAPI.getSceneElements(),
+          appState: excalidrawAPI.getAppState(),
         });
       }
     };
