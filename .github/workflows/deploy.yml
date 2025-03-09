@@ -35,7 +35,7 @@ jobs:
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build
+          name: github-pages
           path: excalidraw-app/build
 
   deploy:
@@ -44,18 +44,10 @@ jobs:
     permissions:
       pages: write
       id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Download Build Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: build
-
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v2
-        with:
-          folder: build
-          path: build
+        uses: actions/deploy-pages@v4
