@@ -917,7 +917,29 @@ const ExcalidrawWrapper = () => {
             </OverwriteConfirmDialog.Action>
           )}
         </OverwriteConfirmDialog>
-        <AppFooter onChange={() => excalidrawAPI?.refresh()} />
+        <AppFooter
+          onChange={() => excalidrawAPI?.refresh()}
+          onPresentation={() => {
+            if (!excalidrawAPI) {
+              return;
+            }
+            const selectedElementIds =
+              excalidrawAPI.getAppState().selectedElementIds;
+            const frames = excalidrawAPI
+              .getSceneElements()
+              .filter((e) => e.type === "frame");
+            frames.sort((e1, e2) => e1.y - e2.y);
+            const framesWithIndex = frames.map((f, index) => ({ ...f, index }));
+            const selectedFrames = framesWithIndex.filter(
+              (f) => f.id in selectedElementIds,
+            );
+            const frameIndex =
+              selectedFrames.length === 0 ? 0 : selectedFrames[0].index;
+            const newUrl = new URL(window.location.href);
+            newUrl.hash = `#presentation=${frameIndex}`;
+            window.open(newUrl.href, "_blank");
+          }}
+        />
         {excalidrawAPI && <AIComponents excalidrawAPI={excalidrawAPI} />}
 
         <TTDDialogTrigger />

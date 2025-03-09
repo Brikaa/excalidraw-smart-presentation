@@ -21,11 +21,20 @@ import {
 } from "excalidraw-app/presentation/animation";
 import "./Presentation.scss";
 
-const RE_PRESENTATION_LINK = /^#presentation$/;
+const RE_PRESENTATION_LINK = /^#presentation=(\d+)$/;
 
 export const isPresentationLink = (link: string) => {
   const hash = new URL(link).hash;
   return RE_PRESENTATION_LINK.test(hash);
+};
+
+export const getFrameIndexFromLink = (link: string) => {
+  const hash = new URL(link).hash;
+  const match = hash.match(RE_PRESENTATION_LINK);
+  if (!match) {
+    throw new Error("Invalid match");
+  }
+  return parseInt(match[1]);
 };
 
 const getPositionedElementsForFrame = (
@@ -287,11 +296,15 @@ export function Presentation() {
   if (frames.length === 0 || !appState) {
     return null;
   }
+  const frameIndex = getFrameIndexFromLink(window.location.href);
+  const initialFrameIndex =
+    frameIndex < 0 || frameIndex >= frames.length ? 0 : frameIndex;
   return (
     <PresentationScene
       appState={appState}
       elements={elements}
       frames={frames}
+      initialFrameIndex={initialFrameIndex}
     />
   );
 }
