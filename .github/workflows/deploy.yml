@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - smart-presentation
+  workflow_dispatch:
 
 permissions:
   contents: read
