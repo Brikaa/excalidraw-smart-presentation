@@ -53,9 +53,10 @@ jobs:
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
-          name: build
+          name: excalidraw-app/build
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v2
         with:
           folder: build
+          path: build
