@@ -122,7 +122,13 @@ export function PresentationScene(props: {
     }
     renderFrame(initialFrameIndex);
     setTimeout(
-      () => excalidrawAPI.updateScene({ appState: { theme: appState.theme } }),
+      () =>
+        excalidrawAPI.updateScene({
+          appState: {
+            theme: appState.theme,
+            viewBackgroundColor: appState.viewBackgroundColor,
+          },
+        }),
       0,
     );
     setLoadedInitialFrame(true);
