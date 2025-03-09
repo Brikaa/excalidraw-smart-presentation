@@ -1,0 +1,10 @@
+#presentation {
+  width: 100%;
+  height: 100%;
+  background: black;
+  display: grid;
+  place-items: center;
+  canvas {
+    cursor: default !important;
+  }
+}

@@ -19,6 +19,7 @@ import {
   animate,
   animationStartTime,
 } from "excalidraw-app/presentation/animation";
+import "./Presentation.scss";
 
 const RE_PRESENTATION_LINK = /^#presentation$/;
 
@@ -232,18 +233,9 @@ export function PresentationScene(props: {
 
   // Render
   return (
-    <div
-      ref={presentationSceneDiv}
-      style={{
-        width: "100%",
-        height: "100%",
-        background: "black",
-        display: "grid",
-        placeItems: "center",
-      }}
-    >
+    <div id="presentation" ref={presentationSceneDiv}>
       {/* We want the canvas to be in a div that has the exact same size as the scaled (zoomed in) frame */}
-      {/* The rest is going to be black */}
+      {/* The rest is going to be black through the outer div */}
       <div
         style={{
           width: `${frames[frameIndex].width * scale}px`,
