@@ -1,16 +1,37 @@
-import { rgbToHex } from "@excalidraw/excalidraw/colors";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import { isTransparent } from "@excalidraw/excalidraw/utils";
 
-const hexToRgb = (hex: string) => {
-  const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
-  return match
-    ? {
-        r: parseInt(match[1], 16),
-        g: parseInt(match[2], 16),
-        b: parseInt(match[3], 16),
-      }
-    : null;
+const hexToRgba = (hex: string) => {
+  const match = hex.match(
+    /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i,
+  );
+  if (!match) {
+    return null;
+  }
+  return {
+    r: parseInt(match[1], 16),
+    g: parseInt(match[2], 16),
+    b: parseInt(match[3], 16),
+    a: match[4] !== undefined ? parseInt(match[4], 16) : 255,
+  };
+};
+
+const rgbaToHex = ({
+  r,
+  g,
+  b,
+  a,
+}: {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
+}) => {
+  const toHex = (n: number) => n.toString(16).padStart(2, "0");
+  return a === 255
+    ? `#${toHex(r)}${toHex(g)}${toHex(b)}`
+    : `#${toHex(r)}${toHex(g)}${toHex(b)}${toHex(a)}`;
 };
 
 const colorProgress = (
@@ -18,19 +39,40 @@ const colorProgress = (
   newColor: string,
   progress: number,
 ) => {
-  const oldRgb = hexToRgb(oldColor);
-  const newRgb = hexToRgb(newColor);
-  if (!oldRgb || !newRgb) {
-    return oldColor;
+  if (isTransparent(oldColor) && isTransparent(newColor)) {
+    return "#00000000";
+  }
+  if (isTransparent(oldColor)) {
+    // Assume oldColor is the same as newColor, but fully transparent.
+    const newRgba = hexToRgba(newColor);
+    if (newRgba) {
+      oldColor = rgbaToHex({ ...newRgba, a: 0 });
+    } else {
+      return newColor;
+    }
+  }
+  if (isTransparent(newColor)) {
+    // Assume newColor is the same as oldColor, but fully transparent.
+    const oldRgba = hexToRgba(oldColor);
+    if (oldRgba) {
+      newColor = rgbaToHex({ ...oldRgba, a: 0 });
+    } else {
+      return oldColor;
+    }
   }
 
-  const [r, g, b] = [
-    Math.round(numericalProgress(oldRgb.r, newRgb.r, progress)),
-    Math.round(numericalProgress(oldRgb.g, newRgb.g, progress)),
-    Math.round(numericalProgress(oldRgb.b, newRgb.b, progress)),
-  ];
+  const oldRgba = hexToRgba(oldColor);
+  const newRgba = hexToRgba(newColor);
+  if (!oldRgba || !newRgba) {
+    return newColor;
+  }
 
-  return rgbToHex(r, g, b);
+  const r = Math.round(numericalProgress(oldRgba.r, newRgba.r, progress));
+  const g = Math.round(numericalProgress(oldRgba.g, newRgba.g, progress));
+  const b = Math.round(numericalProgress(oldRgba.b, newRgba.b, progress));
+  const a = Math.round(numericalProgress(oldRgba.a, newRgba.a, progress));
+
+  return rgbaToHex({ r, g, b, a });
 };
 
 const angleProgress = (
