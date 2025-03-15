@@ -15,11 +15,18 @@ export function DuplicationHandler(props: {
       let changed = false;
       const newElements = elements.map((e) => {
         if (
-          e.customData?.name === undefined &&
+          (e.customData?.name === undefined || e.customData?.name !== e.id) &&
           (e.type !== "image" || e.status !== "pending")
         ) {
           changed = true;
-          return { ...e, customData: { ...e.customData, name: e.id } };
+          return {
+            ...e,
+            customData: {
+              ...e.customData,
+              name: e.id,
+              duplicatedFrom: e.customData?.name ?? null,
+            },
+          };
         }
         return e;
       });
