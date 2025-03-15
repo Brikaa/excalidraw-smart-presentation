@@ -157,8 +157,8 @@ const ANIMATION_DURATION_MS = 300;
 export const animate = (
   timestamp: number,
   excalidrawAPI: ExcalidrawImperativeAPI,
-  oldElements: Map<string, ExcalidrawElement>,
-  newElements: Map<string, ExcalidrawElement>,
+  oldElements: ExcalidrawElement[],
+  newElements: ExcalidrawElement[],
 ) => {
   if (!animationStartTime) {
     animationStartTime = timestamp;
@@ -166,17 +166,52 @@ export const animate = (
   const elapsed = timestamp - animationStartTime;
   const progress = Math.min(elapsed / ANIMATION_DURATION_MS, 1);
 
-  const names = new Set([...oldElements.keys(), ...newElements.keys()]);
-  const intermediateElements: ExcalidrawElement[] = [];
-
-  for (const name of names) {
-    const oldEl = oldElements.get(name);
-    const newEl = newElements.get(name);
-    const intermediate = progressAnimation(oldEl, newEl, progress);
-    if (intermediate) {
-      intermediateElements.push(intermediate);
+  // Build lookup maps for newElements.
+  const newByDup = new Map<string, ExcalidrawElement>();
+  const newById = new Map<string, ExcalidrawElement>();
+  for (const el of newElements) {
+    newById.set(el.id, el);
+    if (el.customData?.duplicatedFrom) {
+      newByDup.set(el.customData.duplicatedFrom, el);
     }
   }
+
+  // Build lookup maps for oldElements.
+  const oldByDup = new Map<string, ExcalidrawElement>();
+  const oldById = new Map<string, ExcalidrawElement>();
+  for (const el of oldElements) {
+    oldById.set(el.id, el);
+    if (el.customData?.duplicatedFrom) {
+      oldByDup.set(el.customData.duplicatedFrom, el);
+    }
+  }
+
+  const intermediateElements: ExcalidrawElement[] = [];
+
+  // For each old element, animate to a matching new element.
+  intermediateElements.push(
+    ...oldElements
+      .map((e) =>
+        progressAnimation(
+          e,
+          newByDup.get(e.id) ?? newById.get(e.customData?.duplicatedFrom ?? ""),
+          progress,
+        ),
+      )
+      .filter((e): e is ExcalidrawElement => e !== undefined),
+  );
+
+  // For new elements that didn't exist before, animate from an undefined state.
+  intermediateElements.push(
+    ...newElements
+      .filter(
+        (e) =>
+          !oldByDup.get(e.id) &&
+          !oldById.get(e.customData?.duplicatedFrom || ""),
+      )
+      .map((e) => progressAnimation(undefined, e, progress))
+      .filter((e): e is ExcalidrawElement => e !== undefined),
+  );
 
   excalidrawAPI.updateScene({ elements: intermediateElements });
 

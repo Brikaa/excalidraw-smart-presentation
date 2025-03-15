@@ -49,31 +49,6 @@ const getPositionedElementsForFrame = (
       y: e.y - frame.y,
     }));
 
-const getBaseKey = (e: ExcalidrawElement) => e.customData?.name ?? e.id;
-
-// Build map of element name to element, if element name is repeated within the same frame
-// give it a _N suffix where N starts from 1
-const buildElementMap = (
-  frameElements: ExcalidrawElement[],
-): Map<string, ExcalidrawElement> => {
-  const map = new Map<string, ExcalidrawElement>();
-  const counts = new Map<string, number>();
-  for (const element of frameElements) {
-    const baseKey = getBaseKey(element);
-    let key = baseKey;
-    // If this key is already used, append a suffix.
-    if (map.has(key)) {
-      const count = (counts.get(baseKey) ?? 0) + 1;
-      counts.set(baseKey, count);
-      key = `${baseKey}-${count}`;
-    } else {
-      counts.set(baseKey, 0);
-    }
-    map.set(key, element);
-  }
-  return map;
-};
-
 export function PresentationScene(props: {
   elements: ExcalidrawElement[];
   appState: Readonly<AppState>;
@@ -104,12 +79,9 @@ export function PresentationScene(props: {
         elements,
       );
 
-      const oldElementsMap = buildElementMap(oldFrameElements);
-      const newElementsMap = buildElementMap(newFrameElements);
-
       setFrameIndex(newFrameIndex);
       requestAnimationFrame((timestamp) =>
-        animate(timestamp, excalidrawAPI, oldElementsMap, newElementsMap),
+        animate(timestamp, excalidrawAPI, oldFrameElements, newFrameElements),
       );
     },
     [elements, excalidrawAPI, frameIndex, frames],
