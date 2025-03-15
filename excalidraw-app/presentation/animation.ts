@@ -1,6 +1,7 @@
+import { isTransparent } from "@excalidraw/excalidraw/utils";
+
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
-import { isTransparent } from "@excalidraw/excalidraw/utils";
 
 const hexToRgba = (hex: string) => {
   const match = hex.match(

@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 export function DuplicationHandler(props: {

@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Excalidraw } from "@excalidraw/excalidraw";
+import { supportsResizeObserver } from "@excalidraw/excalidraw/constants";
+import { isInitializedImageElement } from "@excalidraw/excalidraw/element/typeChecks";
+import { KEYS } from "@excalidraw/excalidraw/keys";
+import {
+  animate,
+  animationStartTime,
+} from "excalidraw-app/presentation/animation";
+
 import type {
   ExcalidrawElement,
   ExcalidrawFrameElement,
@@ -10,15 +18,10 @@ import type {
   ExcalidrawImperativeAPI,
   NormalizedZoomValue,
 } from "@excalidraw/excalidraw/types";
-import { supportsResizeObserver } from "@excalidraw/excalidraw/constants";
-import { isInitializedImageElement } from "@excalidraw/excalidraw/element/typeChecks";
-import { KEYS } from "@excalidraw/excalidraw/keys";
+
 import { LocalData } from "../data/LocalData";
 import { updateStaleImageStatuses } from "../data/FileManager";
-import {
-  animate,
-  animationStartTime,
-} from "excalidraw-app/presentation/animation";
+
 import "./Presentation.scss";
 
 const RE_PRESENTATION_LINK = /^#presentation=(\d+)$/;
