@@ -30,7 +30,7 @@ export type ActionResult =
     }
   | false;
 
-type ActionFn = (
+export type ActionFn = (
   elements: readonly OrderedExcalidrawElement[],
   appState: Readonly<AppState>,
   formData: any,
@@ -82,6 +82,7 @@ export type ActionName =
   | "saveFileToDisk"
   | "loadScene"
   | "duplicateSelection"
+  | "duplicateSelectionIntoNextFrame"
   | "deleteSelectedElements"
   | "changeViewBackgroundColor"
   | "clearCanvas"

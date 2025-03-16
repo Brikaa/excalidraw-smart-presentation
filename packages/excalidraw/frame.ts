@@ -58,7 +58,7 @@ export const bindElementsToFramesAfterDuplication = (
           mutateElement(
             nextElement,
             {
-              frameId: nextFrameId ?? element.frameId,
+              frameId: nextFrameId ?? nextElement.frameId,
             },
             false,
           );

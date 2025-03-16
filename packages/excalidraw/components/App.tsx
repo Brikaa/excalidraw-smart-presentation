@@ -52,6 +52,7 @@ import {
   actionToggleLinearEditor,
   actionToggleObjectsSnapMode,
   actionToggleCropEditor,
+  actionDuplicateSelectionIntoNextFrame,
 } from "../actions";
 import { actionWrapTextInContainer } from "../actions/actionBoundText";
 import { actionToggleHandTool, zoomToFit } from "../actions/actionCanvas";
@@ -10921,6 +10922,7 @@ class App extends React.Component<AppProps, AppState> {
       actionCopyElementLink,
       CONTEXT_MENU_SEPARATOR,
       actionDuplicateSelection,
+      actionDuplicateSelectionIntoNextFrame,
       actionToggleElementLock,
       CONTEXT_MENU_SEPARATOR,
       actionDeleteSelected,

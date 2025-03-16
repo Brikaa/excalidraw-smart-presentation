@@ -42,16 +42,15 @@ import {
 
 import { register } from "./register";
 
-import type { ActionResult } from "./types";
-import type { ExcalidrawElement } from "../element/types";
+import type { ActionFn, ActionResult } from "./types";
+import type {
+  ExcalidrawElement,
+  ExcalidrawFrameElement,
+} from "../element/types";
 import type { AppState } from "../types";
 
-export const actionDuplicateSelection = register({
-  name: "duplicateSelection",
-  label: "labels.duplicateSelection",
-  icon: DuplicateIcon,
-  trackEvent: { category: "element" },
-  perform: (elements, appState, formData, app) => {
+const performDuplicateSelection: (intoNextFrame?: boolean) => ActionFn =
+  (intoNextFrame) => (elements, appState, formData, app) => {
     if (appState.selectedElementsAreBeingDragged) {
       return false;
     }
@@ -75,7 +74,11 @@ export const actionDuplicateSelection = register({
       }
     }
 
-    const nextState = duplicateElements(elements, appState);
+    const nextState = duplicateElements(
+      elements,
+      appState,
+      intoNextFrame ?? false,
+    );
 
     if (app.props.onDuplicate && nextState.elements) {
       const mappedElements = app.props.onDuplicate(
@@ -91,7 +94,14 @@ export const actionDuplicateSelection = register({
       ...nextState,
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
-  },
+  };
+
+export const actionDuplicateSelection = register({
+  name: "duplicateSelection",
+  label: "labels.duplicateSelection",
+  icon: DuplicateIcon,
+  trackEvent: { category: "element" },
+  perform: performDuplicateSelection(),
   keyTest: (event) => event[KEYS.CTRL_OR_CMD] && event.key === KEYS.D,
   PanelComponent: ({ elements, appState, updateData }) => (
     <ToolButton
@@ -107,9 +117,32 @@ export const actionDuplicateSelection = register({
   ),
 });
 
+export const actionDuplicateSelectionIntoNextFrame = register({
+  name: "duplicateSelectionIntoNextFrame",
+  label: "labels.duplicateSelectionIntoNextFrame",
+  icon: DuplicateIcon,
+  trackEvent: { category: "element" },
+  perform: performDuplicateSelection(true),
+  keyTest: (event) =>
+    event[KEYS.CTRL_OR_CMD] && event.shiftKey && event.key === KEYS.D,
+  PanelComponent: ({ elements, appState, updateData }) => (
+    <ToolButton
+      type="button"
+      icon={DuplicateIcon}
+      title={`${t("labels.duplicateSelectionIntoNextFrame")} — ${getShortcutKey(
+        "CtrlOrCmd+Shift+D",
+      )}`}
+      aria-label={t("labels.duplicateSelectionIntoNextFrame")}
+      onClick={() => updateData(null)}
+      visible={isSomeElementSelected(getNonDeletedElements(elements), appState)}
+    />
+  ),
+});
+
 const duplicateElements = (
   elements: readonly ExcalidrawElement[],
   appState: AppState,
+  intoNextFrame: boolean = false,
 ): Partial<Exclude<ActionResult, false>> => {
   // ---------------------------------------------------------------------------
 
@@ -120,6 +153,19 @@ const duplicateElements = (
   const duplicatedElementsMap = new Map<string, ExcalidrawElement>();
 
   const elementsMap = arrayToMap(elements);
+
+  const frameIdToNextFrame: Map<string, ExcalidrawFrameElement> | null =
+    new Map();
+
+  if (intoNextFrame) {
+    const frames = elements.filter(
+      (e): e is ExcalidrawFrameElement => !e.isDeleted && e.type === "frame",
+    );
+    frames.sort((e1, e2) => e1.y - e2.y);
+    for (let i = 0; i < frames.length - 1; ++i) {
+      frameIdToNextFrame.set(frames[i].id, frames[i + 1]);
+    }
+  }
 
   const duplicateAndOffsetElement = <
     T extends ExcalidrawElement | ExcalidrawElement[],
@@ -138,14 +184,28 @@ const duplicateElements = (
 
         processedIds.set(element.id, true);
 
+        let newProperties: Partial<ExcalidrawElement> = {
+          x: element.x + DEFAULT_GRID_SIZE / 2,
+          y: element.y + DEFAULT_GRID_SIZE / 2,
+        };
+
+        if (element.frameId && intoNextFrame && frameIdToNextFrame) {
+          const nextFrame = frameIdToNextFrame.get(element.frameId);
+          const frame = elementsMap.get(element.frameId);
+          if (nextFrame && frame) {
+            newProperties = {
+              x: nextFrame.x + (element.x - frame.x),
+              y: nextFrame.y + (element.y - frame.y),
+              frameId: nextFrame.id,
+            };
+          }
+        }
+
         const newElement = duplicateElement(
           appState.editingGroupId,
           groupIdMap,
           element,
-          {
-            x: element.x + DEFAULT_GRID_SIZE / 2,
-            y: element.y + DEFAULT_GRID_SIZE / 2,
-          },
+          newProperties,
         );
 
         processedIds.set(newElement.id, true);
