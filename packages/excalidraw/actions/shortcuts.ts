@@ -19,6 +19,7 @@ export type ShortcutName =
       | "selectAll"
       | "deleteSelectedElements"
       | "duplicateSelection"
+      | "duplicateSelectionIntoNextFrame"
       | "sendBackward"
       | "bringForward"
       | "sendToBack"
@@ -76,6 +77,7 @@ const shortcutMap: Record<ShortcutName, string[]> = {
     getShortcutKey("CtrlOrCmd+D"),
     getShortcutKey(`Alt+${t("helpDialog.drag")}`),
   ],
+  duplicateSelectionIntoNextFrame: [getShortcutKey("CtrlOrCmd+Shift+D")],
   sendBackward: [getShortcutKey("CtrlOrCmd+[")],
   bringForward: [getShortcutKey("CtrlOrCmd+]")],
   sendToBack: [

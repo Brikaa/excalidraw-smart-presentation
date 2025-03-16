@@ -25,7 +25,7 @@ import {
   getElementsInGroup,
 } from "../groups";
 import { t } from "../i18n";
-import { KEYS } from "../keys";
+import { KEYS, matchKey } from "../keys";
 import { isSomeElementSelected } from "../scene";
 import {
   excludeElementsInFramesFromSelection,
@@ -124,7 +124,7 @@ export const actionDuplicateSelectionIntoNextFrame = register({
   trackEvent: { category: "element" },
   perform: performDuplicateSelection(true),
   keyTest: (event) =>
-    event[KEYS.CTRL_OR_CMD] && event.shiftKey && event.key === KEYS.D,
+    event[KEYS.CTRL_OR_CMD] && event.shiftKey && matchKey(event, KEYS.D),
   PanelComponent: ({ elements, appState, updateData }) => (
     <ToolButton
       type="button"
