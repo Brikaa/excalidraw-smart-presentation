@@ -1,5 +1,7 @@
 import { isTransparent } from "@excalidraw/excalidraw/utils";
 
+import { isLinearElement } from "@excalidraw/excalidraw";
+
 import type {
   ExcalidrawElement,
   ExcalidrawTextElement,
@@ -143,6 +145,31 @@ const progressAnimation = (
   // animate animatable properties
   const intermediate: any = {};
   for (const key of Object.keys(newElement) as Array<keyof ExcalidrawElement>) {
+    // Line points special case
+    if (isLinearElement(oldElement) && isLinearElement(newElement)) {
+      const oldPoints = oldElement.points;
+      const newPoints = newElement.points;
+      const oldPointsFilled =
+        oldPoints.length >= newPoints.length
+          ? oldPoints
+          : oldPoints.concat(
+              Array(newPoints.length - oldPoints.length).fill(
+                oldPoints[oldPoints.length - 1],
+              ),
+            );
+      const newPointsFilled =
+        newPoints.length >= oldPoints.length
+          ? newPoints
+          : newPoints.concat(
+              Array(oldPoints.length - newPoints.length).fill(
+                newPoints[newPoints.length - 1],
+              ),
+            );
+      intermediate.points = oldPointsFilled.map((p, i) => [
+        numericalProgress(p[0], newPointsFilled[i][0], progress),
+        numericalProgress(p[1], newPointsFilled[i][1], progress),
+      ]);
+    }
     if (ANIMATABLE_PROPERTIES.has(key)) {
       intermediate[key] = ANIMATABLE_PROPERTIES.get(key)!(
         oldElement[key],
