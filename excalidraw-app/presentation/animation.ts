@@ -1,6 +1,9 @@
 import { isTransparent } from "@excalidraw/excalidraw/utils";
 
-import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
+import type {
+  ExcalidrawElement,
+  ExcalidrawTextElement,
+} from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 const hexToRgba = (hex: string) => {
@@ -94,7 +97,7 @@ const numericalProgress = (oldNum: number, newNum: number, progress: number) =>
   oldNum + (newNum - oldNum) * progress;
 
 const ANIMATABLE_PROPERTIES = new Map<
-  keyof ExcalidrawElement,
+  keyof ExcalidrawElement | keyof ExcalidrawTextElement,
   (oldVal: any, newVal: any, progress: number) => any
 >([
   ["opacity", numericalProgress],
@@ -107,6 +110,7 @@ const ANIMATABLE_PROPERTIES = new Map<
   ["roughness", numericalProgress],
   ["backgroundColor", colorProgress],
   ["strokeColor", colorProgress],
+  ["fontSize", numericalProgress],
 ]);
 
 const progressAnimation = (
