@@ -25,6 +25,7 @@ import MultiDimension from "./MultiDimension";
 import MultiFontSize from "./MultiFontSize";
 import MultiPosition from "./MultiPosition";
 import Position from "./Position";
+import { Name } from "./Name";
 import { getAtomicUnits } from "./utils";
 
 import "./Stats.scss";
@@ -291,6 +292,9 @@ export const StatsInner = memo(
                           : t(`element.${singleElement.type}`)}
                       </StatsRow>
 
+                      <StatsRow>
+                        <Name element={singleElement} />
+                      </StatsRow>
                       <StatsRow>
                         <Position
                           element={singleElement}

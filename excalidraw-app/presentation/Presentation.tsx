@@ -52,7 +52,8 @@ const getPositionedElementsForFrame = (
       y: e.y - frame.y,
     }));
 
-const getBaseKey = (e: ExcalidrawElement) => e.customData?.name ?? e.id;
+const getBaseKey = (e: ExcalidrawElement) =>
+  `${e.type}-${e.customData?.name ?? e.id}`;
 
 // Build map of element name to element, if element name is repeated within the same frame
 // give it a _N suffix where N starts from 1
