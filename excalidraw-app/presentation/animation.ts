@@ -6,6 +6,10 @@ import type {
 } from "@excalidraw/excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
+const easeInOutSine = (t: number): number => {
+  return -(Math.cos(Math.PI * t) - 1) / 2;
+};
+
 const hexToRgba = (hex: string) => {
   const match = hex.match(
     /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})?$/i,
@@ -90,11 +94,11 @@ const angleProgress = (
   } else if (diff < -Math.PI) {
     diff += 2 * Math.PI;
   }
-  return oldAngle + diff * progress;
+  return oldAngle + diff * easeInOutSine(progress);
 };
 
 const numericalProgress = (oldNum: number, newNum: number, progress: number) =>
-  oldNum + (newNum - oldNum) * progress;
+  oldNum + (newNum - oldNum) * easeInOutSine(progress);
 
 const ANIMATABLE_PROPERTIES = new Map<
   keyof ExcalidrawElement | keyof ExcalidrawTextElement,
@@ -157,7 +161,7 @@ const progressAnimation = (
 };
 
 export let animationStartTime: number | null = null;
-const ANIMATION_DURATION_MS = 300;
+const ANIMATION_DURATION_MS = 600;
 
 export const animate = (
   timestamp: number,
