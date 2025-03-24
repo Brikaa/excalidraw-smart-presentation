@@ -1,22 +1,49 @@
 # Excalidraw Smart Presentation
 
-Create presentations with smart animations using Excalidraw
+Create dynamic, animated presentations directly within Excalidraw.
 
-https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
+This tool allows you to define **frames** as slides, automatically animating elements that persist between frames. It enables seamless transitions and a structured way to present ideas visually.
 
-Presentation source available in `./presentation-docs`
+![](https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9)
 
-## How to use
+**Presentation source:** Available in [`./presentation-docs`](./presentation-docs).
 
-- Create frames using the frame tool. It can be brought up using the `f` keyboard shortcut, from the command palette or from the toolbar.
-- Each frame represents a slide.
-- Slides are ordered according to the frames' positions on the y-axis.
-- Elements that are duplicated from one frame to the other are animated (can be customized as described below).
-- Click "present" and use the arrow keys to move through the slides.
+## How to Use
 
-## Tips
+1. **Create Frames:**
 
-- You can start the presentation at a certain slide by selecting the corresponding frame and clicking "present".
-- If you want to ensure a 16:9 aspect ratio, edit the frame's size using the "Canvas & Shape Properties" menu which can be brought up from the command palette or by using the `alt` + `/` keyboard shortcut.
-- If you want to duplicate an element from a frame to the exact same position in the next frame, select the element and press `ctrl` + `shift` + `d`, or select "duplicate into next frame" from the command palette.
-- Wrong elements being animated? Elements unintentionally animated? Change the elements' names through the "Canvas & Shape Properties" menu. Elements with the same name are the ones that are animated from one frame to the other, but there can be unexpected behaviors when multiple elements with the same name are in the same frame, so you have the ability to edit the name.
+   - Use the **Frame tool** (`f` key, toolbar, or command palette).
+   - Each frame represents a slide.
+
+2. **Define Slide Order:**
+
+   - Frames are ordered based on their **y-axis position**.
+
+3. **Animations:**
+
+   - Elements that are duplicated from one frame to the other are animated on slide transition by interpolating the changes in their properties.
+   - This behavior can be customized (see below).
+
+4. **Present Your Slides:**
+   - Click **"Present"**, then use `→` / `←` (arrow keys) to navigate.
+
+## Tips & Tricks
+
+- **Start from a Specific Slide:**
+
+  - Select a frame, then click **"Present"**.
+
+- **Maintain a 16:9 Aspect Ratio or any exact size:**
+
+  - Edit frame size via **"Canvas & Shape Properties"** (`Alt + /` or command palette).
+
+- **Duplicate Elements Across Frames:**
+
+  - Select an element, then press **`Ctrl + Shift + D`**
+  - Or use **"Duplicate into next frame"** from the command palette.
+
+- **Fix Unintended Animations:**
+
+  - Elements with the **same name** in consecutive frames are animated.
+  - Elements are given the same name on duplication, hence why duplicated elements are animated.
+  - Rename elements in **"Canvas & Shape Properties"** to prevent unwanted animations or to animate different elements.
