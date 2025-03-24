@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
 
   - Edit frame size via **"Canvas & Shape Properties"** (`Alt + /` or command palette).
 
-- **Duplicate Elements Across Frames:**
+- **Duplicate an element into the exact same position in the next frames:**
 
   - Select an element, then press **`Ctrl + Shift + D`**
   - Or use **"Duplicate into next frame"** from the command palette.
