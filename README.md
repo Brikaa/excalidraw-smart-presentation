@@ -4,7 +4,7 @@ Create dynamic, animated presentations directly within Excalidraw.
 
 This tool allows you to define **frames** as slides, automatically animating elements that persist between frames. It enables seamless transitions and a structured way to present ideas visually.
 
-![](https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9)
+https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
 
 **Presentation source:** Available in [`./presentation-docs`](./presentation-docs).
 
