@@ -304,7 +304,17 @@ export function Presentation() {
     return res;
   }, [elements]);
   if (frames.length === 0 || !appState) {
-    return null;
+    return (
+      <div>
+        <h1>Blank presentation</h1>
+        <p>
+          Learn how to make a presentation{" "}
+          <a href="https://github.com/excalidraw-smart-presentation/excalidraw-smart-presentation.github.io?tab=readme-ov-file#excalidraw-smart-presentation">
+            here
+          </a>
+        </p>
+      </div>
+    );
   }
   const frameIndex = getFrameIndexFromLink(window.location.href);
   const initialFrameIndex =
