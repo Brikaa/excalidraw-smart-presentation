@@ -2,7 +2,7 @@
 
 Create presentations with smart animations using Excalidraw
 
-![](./presentation-docs/presentation.mp4)
+https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
 
 Presentation source available in `./presentation-docs`
 
