@@ -47,3 +47,10 @@ https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
   - Elements with the **same name** in consecutive frames are animated.
   - Elements are given the same name on duplication, hence why duplicated elements are animated.
   - Rename elements in **"Canvas & Shape Properties"** to prevent unwanted animations or to animate different elements.
+
+## Current Limitations
+
+- Not usable on touch-screens and requires a keyboard since arrow keys are the only way to navigate slides.
+- The "Present" button is not shown on mobile/small screens, users must open a new tab and append `#presentation=0` manually to the website's link.
+- Animation duration (300 ms) and type (linear) are not customizable.
+- Animations can sometimes be slightly choppy, though this is not a major issue.
