@@ -6,67 +6,58 @@ import {
 } from "@excalidraw/math";
 import oc from "open-color";
 
-import { getClientColor, renderRemoteCursors } from "../clients";
 import {
+  arrayToMap,
   DEFAULT_TRANSFORM_HANDLE_SPACING,
   FRAME_STYLE,
+  invariant,
   THEME,
-} from "../constants";
+  throttleRAF,
+} from "@excalidraw/common";
+
 import {
-  getElementAbsoluteCoords,
-  getTransformHandlesFromCoords,
-  getTransformHandles,
-  getCommonBounds,
-} from "../element";
-import {
-  BINDING_HIGHLIGHT_OFFSET,
-  BINDING_HIGHLIGHT_THICKNESS,
+  FIXED_BINDING_DISTANCE,
   maxBindingGap,
-} from "../element/binding";
-import { LinearElementEditor } from "../element/linearElementEditor";
+} from "@excalidraw/element/binding";
+import { LinearElementEditor } from "@excalidraw/element/linearElementEditor";
 import {
   getOmitSidesForDevice,
+  getTransformHandles,
+  getTransformHandlesFromCoords,
   shouldShowBoundingBox,
-} from "../element/transformHandles";
+} from "@excalidraw/element/transformHandles";
 import {
   isElbowArrow,
   isFrameLikeElement,
   isImageElement,
   isLinearElement,
   isTextElement,
-} from "../element/typeChecks";
-import {
-  isSelectedViaGroup,
-  getSelectedGroupIds,
-  getElementsInGroup,
-  selectGroupsFromGivenElements,
-} from "../groups";
-import { renderSelectionElement } from "../renderer/renderElement";
-import { renderSnaps } from "../renderer/renderSnaps";
-import { roundRect } from "../renderer/roundRect";
-import {
-  getScrollBars,
-  SCROLLBAR_COLOR,
-  SCROLLBAR_WIDTH,
-} from "../scene/scrollbars";
-import { getCornerRadius } from "../shapes";
-import { type InteractiveCanvasAppState } from "../types";
-import { arrayToMap, invariant, throttleRAF } from "../utils";
+} from "@excalidraw/element/typeChecks";
+
+import { renderSelectionElement } from "@excalidraw/element/renderElement";
 
 import {
-  bootstrapCanvas,
-  fillCircle,
-  getNormalizedCanvasDimensions,
-} from "./helpers";
+  getElementsInGroup,
+  getSelectedGroupIds,
+  isSelectedViaGroup,
+  selectGroupsFromGivenElements,
+} from "@excalidraw/element/groups";
+
+import {
+  getCommonBounds,
+  getElementAbsoluteCoords,
+} from "@excalidraw/element/bounds";
 
 import type {
   SuggestedBinding,
   SuggestedPointBinding,
-} from "../element/binding";
+} from "@excalidraw/element/binding";
+
 import type {
   TransformHandles,
   TransformHandleType,
-} from "../element/transformHandles";
+} from "@excalidraw/element/transformHandles";
+
 import type {
   ElementsMap,
   ExcalidrawBindableElement,
@@ -77,7 +68,29 @@ import type {
   ExcalidrawTextElement,
   GroupId,
   NonDeleted,
-} from "../element/types";
+} from "@excalidraw/element/types";
+
+import { renderSnaps } from "../renderer/renderSnaps";
+import { roundRect } from "../renderer/roundRect";
+import {
+  getScrollBars,
+  SCROLLBAR_COLOR,
+  SCROLLBAR_WIDTH,
+} from "../scene/scrollbars";
+import { type InteractiveCanvasAppState } from "../types";
+
+import { getClientColor, renderRemoteCursors } from "../clients";
+
+import {
+  bootstrapCanvas,
+  drawHighlightForDiamondWithRotation,
+  drawHighlightForRectWithRotation,
+  fillCircle,
+  getNormalizedCanvasDimensions,
+  strokeEllipseWithRotation,
+  strokeRectWithRotation,
+} from "./helpers";
+
 import type {
   InteractiveCanvasRenderConfig,
   InteractiveSceneRenderConfig,
@@ -148,57 +161,6 @@ const highlightPoint = <Point extends LocalPoint | GlobalPoint>(
   );
 };
 
-const strokeRectWithRotation = (
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  cx: number,
-  cy: number,
-  angle: number,
-  fill: boolean = false,
-  /** should account for zoom */
-  radius: number = 0,
-) => {
-  context.save();
-  context.translate(cx, cy);
-  context.rotate(angle);
-  if (fill) {
-    context.fillRect(x - cx, y - cy, width, height);
-  }
-  if (radius && context.roundRect) {
-    context.beginPath();
-    context.roundRect(x - cx, y - cy, width, height, radius);
-    context.stroke();
-    context.closePath();
-  } else {
-    context.strokeRect(x - cx, y - cy, width, height);
-  }
-  context.restore();
-};
-
-const strokeDiamondWithRotation = (
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  cx: number,
-  cy: number,
-  angle: number,
-) => {
-  context.save();
-  context.translate(cx, cy);
-  context.rotate(angle);
-  context.beginPath();
-  context.moveTo(0, height / 2);
-  context.lineTo(width / 2, 0);
-  context.lineTo(0, -height / 2);
-  context.lineTo(-width / 2, 0);
-  context.closePath();
-  context.stroke();
-  context.restore();
-};
-
 const renderSingleLinearPoint = <Point extends GlobalPoint | LocalPoint>(
   context: CanvasRenderingContext2D,
   appState: InteractiveCanvasAppState,
@@ -225,19 +187,6 @@ const renderSingleLinearPoint = <Point extends GlobalPoint | LocalPoint>(
   );
 };
 
-const strokeEllipseWithRotation = (
-  context: CanvasRenderingContext2D,
-  width: number,
-  height: number,
-  cx: number,
-  cy: number,
-  angle: number,
-) => {
-  context.beginPath();
-  context.ellipse(cx, cy, width / 2, height / 2, angle, 0, Math.PI * 2);
-  context.stroke();
-};
-
 const renderBindingHighlightForBindableElement = (
   context: CanvasRenderingContext2D,
   element: ExcalidrawBindableElement,
@@ -249,16 +198,10 @@ const renderBindingHighlightForBindableElement = (
   const height = y2 - y1;
 
   context.strokeStyle = "rgba(0,0,0,.05)";
-  // When zooming out, make line width greater for visibility
-  const zoomValue = zoom.value < 1 ? zoom.value : 1;
-  context.lineWidth = BINDING_HIGHLIGHT_THICKNESS / zoomValue;
-  // To ensure the binding highlight doesn't overlap the element itself
-  const padding = context.lineWidth / 2 + BINDING_HIGHLIGHT_OFFSET;
+  context.fillStyle = "rgba(0,0,0,.05)";
 
-  const radius = getCornerRadius(
-    Math.min(element.width, element.height),
-    element,
-  );
+  // To ensure the binding highlight doesn't overlap the element itself
+  const padding = maxBindingGap(element, element.width, element.height, zoom);
 
   switch (element.type) {
     case "rectangle":
@@ -268,37 +211,20 @@ const renderBindingHighlightForBindableElement = (
     case "embeddable":
     case "frame":
     case "magicframe":
-      strokeRectWithRotation(
-        context,
-        x1 - padding,
-        y1 - padding,
-        width + padding * 2,
-        height + padding * 2,
-        x1 + width / 2,
-        y1 + height / 2,
-        element.angle,
-        undefined,
-        radius,
-      );
+      drawHighlightForRectWithRotation(context, element, padding);
       break;
     case "diamond":
-      const side = Math.hypot(width, height);
-      const wPadding = (padding * side) / height;
-      const hPadding = (padding * side) / width;
-      strokeDiamondWithRotation(
-        context,
-        width + wPadding * 2,
-        height + hPadding * 2,
-        x1 + width / 2,
-        y1 + height / 2,
-        element.angle,
-      );
+      drawHighlightForDiamondWithRotation(context, padding, element);
       break;
     case "ellipse":
+      context.lineWidth =
+        maxBindingGap(element, element.width, element.height, zoom) -
+        FIXED_BINDING_DISTANCE;
+
       strokeEllipseWithRotation(
         context,
-        width + padding * 2,
-        height + padding * 2,
+        width + padding + FIXED_BINDING_DISTANCE,
+        height + padding + FIXED_BINDING_DISTANCE,
         x1 + width / 2,
         y1 + height / 2,
         element.angle,
@@ -886,23 +812,24 @@ const _renderInteractiveScene = ({
     );
   }
 
-  if (
-    isElbowArrow(selectedElements[0]) &&
-    appState.selectedLinearElement &&
-    appState.selectedLinearElement.segmentMidPointHoveredCoords
-  ) {
-    renderElbowArrowMidPointHighlight(context, appState);
-  } else if (
-    appState.selectedLinearElement &&
-    appState.selectedLinearElement.hoverPointIndex >= 0 &&
-    !(
-      isElbowArrow(selectedElements[0]) &&
-      appState.selectedLinearElement.hoverPointIndex > 0 &&
-      appState.selectedLinearElement.hoverPointIndex <
-        selectedElements[0].points.length - 1
-    )
-  ) {
-    renderLinearElementPointHighlight(context, appState, elementsMap);
+  // Arrows have a different highlight behavior when
+  // they are the only selected element
+  if (appState.selectedLinearElement) {
+    const editor = appState.selectedLinearElement;
+    const firstSelectedLinear = selectedElements.find(
+      (el) => el.id === editor.elementId, // Don't forget bound text elements!
+    );
+
+    if (editor.segmentMidPointHoveredCoords) {
+      renderElbowArrowMidPointHighlight(context, appState);
+    } else if (
+      isElbowArrow(firstSelectedLinear)
+        ? editor.hoverPointIndex === 0 ||
+          editor.hoverPointIndex === firstSelectedLinear.points.length - 1
+        : editor.hoverPointIndex >= 0
+    ) {
+      renderLinearElementPointHighlight(context, appState, elementsMap);
+    }
   }
 
   // Paint selected elements
@@ -1073,7 +1000,7 @@ const _renderInteractiveScene = ({
       const dashedLinePadding =
         (DEFAULT_TRANSFORM_HANDLE_SPACING * 2) / appState.zoom.value;
       context.fillStyle = oc.white;
-      const [x1, y1, x2, y2] = getCommonBounds(selectedElements);
+      const [x1, y1, x2, y2] = getCommonBounds(selectedElements, elementsMap);
       const initialLineDash = context.getLineDash();
       context.setLineDash([2 / appState.zoom.value]);
       const lineWidth = context.lineWidth;
@@ -1169,7 +1096,7 @@ const _renderInteractiveScene = ({
   let scrollBars;
   if (renderConfig.renderScrollbars) {
     scrollBars = getScrollBars(
-      visibleElements,
+      elementsMap,
       normalizedWidth,
       normalizedHeight,
       appState,

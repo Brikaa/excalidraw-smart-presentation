@@ -166,7 +166,9 @@
     "unCroppedDimension": "Uncropped dimension",
     "copyElementLink": "Copy link to object",
     "linkToElement": "Link to object",
-    "wrapSelectionInFrame": "Wrap selection in frame"
+    "wrapSelectionInFrame": "Wrap selection in frame",
+    "tab": "Tab",
+    "shapeSwitch": "Switch shape"
   },
   "elementLink": {
     "title": "Link to object",
@@ -277,6 +279,7 @@
   },
   "toolBar": {
     "selection": "Selection",
+    "lasso": "Lasso selection",
     "image": "Insert image",
     "rectangle": "Rectangle",
     "diamond": "Diamond",
@@ -296,7 +299,8 @@
     "laser": "Laser pointer",
     "hand": "Hand (panning tool)",
     "extraTools": "More tools",
-    "mermaidToExcalidraw": "Mermaid to Excalidraw"
+    "mermaidToExcalidraw": "Mermaid to Excalidraw",
+    "convertElementType": "Toggle shape type"
   },
   "element": {
     "rectangle": "Rectangle",

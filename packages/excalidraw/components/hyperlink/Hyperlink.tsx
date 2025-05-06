@@ -8,37 +8,51 @@ import {
   useState,
 } from "react";
 
-import { trackEvent } from "../../analytics";
-import { getTooltipDiv, updateTooltipPosition } from "../../components/Tooltip";
-import { EVENT, HYPERLINK_TOOLTIP_DELAY } from "../../constants";
-import { isLocalLink, normalizeLink } from "../../data/url";
-import { getElementAbsoluteCoords } from "../../element/bounds";
-import { hitElementBoundingBox } from "../../element/collision";
-import { isElementLink } from "../../element/elementLink";
-import { getEmbedLink, embeddableURLValidator } from "../../element/embeddable";
-import { mutateElement } from "../../element/mutateElement";
-import { t } from "../../i18n";
+import { EVENT, HYPERLINK_TOOLTIP_DELAY, KEYS } from "@excalidraw/common";
+
+import { getElementAbsoluteCoords } from "@excalidraw/element/bounds";
+
+import { hitElementBoundingBox } from "@excalidraw/element/collision";
+
+import { isElementLink } from "@excalidraw/element/elementLink";
+
+import {
+  getEmbedLink,
+  embeddableURLValidator,
+} from "@excalidraw/element/embeddable";
+
 import {
   sceneCoordsToViewportCoords,
   viewportCoordsToSceneCoords,
   wrapEvent,
-} from "../../utils";
-import { useAppProps, useDevice, useExcalidrawAppState } from "../App";
-import { ToolButton } from "../ToolButton";
-import { FreedrawIcon, TrashIcon, elementLinkIcon } from "../icons";
-import { KEYS } from "../../keys";
-import { getSelectedElements } from "../../scene";
-import { isEmbeddableElement } from "../../element/typeChecks";
+  isLocalLink,
+  normalizeLink,
+} from "@excalidraw/common";
 
-import { getLinkHandleFromCoords } from "./helpers";
+import { isEmbeddableElement } from "@excalidraw/element/typeChecks";
 
-import "./Hyperlink.scss";
+import type Scene from "@excalidraw/element/Scene";
 
 import type {
   ElementsMap,
   ExcalidrawEmbeddableElement,
   NonDeletedExcalidrawElement,
-} from "../../element/types";
+} from "@excalidraw/element/types";
+
+import { trackEvent } from "../../analytics";
+import { getTooltipDiv, updateTooltipPosition } from "../../components/Tooltip";
+
+import { t } from "../../i18n";
+
+import { useAppProps, useDevice, useExcalidrawAppState } from "../App";
+import { ToolButton } from "../ToolButton";
+import { FreedrawIcon, TrashIcon, elementLinkIcon } from "../icons";
+import { getSelectedElements } from "../../scene";
+
+import { getLinkHandleFromCoords } from "./helpers";
+
+import "./Hyperlink.scss";
+
 import type { AppState, ExcalidrawProps, UIAppState } from "../../types";
 
 const POPUP_WIDTH = 380;
@@ -56,14 +70,14 @@ const embeddableLinkCache = new Map<
 
 export const Hyperlink = ({
   element,
-  elementsMap,
+  scene,
   setAppState,
   onLinkOpen,
   setToast,
   updateEmbedValidationStatus,
 }: {
   element: NonDeletedExcalidrawElement;
-  elementsMap: ElementsMap;
+  scene: Scene;
   setAppState: React.Component<any, AppState>["setState"];
   onLinkOpen: ExcalidrawProps["onLinkOpen"];
   setToast: (
@@ -74,6 +88,7 @@ export const Hyperlink = ({
     status: boolean,
   ) => void;
 }) => {
+  const elementsMap = scene.getNonDeletedElementsMap();
   const appState = useExcalidrawAppState();
   const appProps = useAppProps();
   const device = useDevice();
@@ -100,7 +115,7 @@ export const Hyperlink = ({
         setAppState({ activeEmbeddable: null });
       }
       if (!link) {
-        mutateElement(element, {
+        scene.mutateElement(element, {
           link: null,
         });
         updateEmbedValidationStatus(element, false);
@@ -112,7 +127,7 @@ export const Hyperlink = ({
           setToast({ message: t("toast.unableToEmbed"), closable: true });
         }
         element.link && embeddableLinkCache.set(element.id, element.link);
-        mutateElement(element, {
+        scene.mutateElement(element, {
           link,
         });
         updateEmbedValidationStatus(element, false);
@@ -130,7 +145,7 @@ export const Hyperlink = ({
           : 1;
         const hasLinkChanged =
           embeddableLinkCache.get(element.id) !== element.link;
-        mutateElement(element, {
+        scene.mutateElement(element, {
           ...(hasLinkChanged
             ? {
                 width:
@@ -155,10 +170,11 @@ export const Hyperlink = ({
         }
       }
     } else {
-      mutateElement(element, { link });
+      scene.mutateElement(element, { link });
     }
   }, [
     element,
+    scene,
     setToast,
     appProps.validateEmbeddable,
     appState.activeEmbeddable,
@@ -215,9 +231,9 @@ export const Hyperlink = ({
 
   const handleRemove = useCallback(() => {
     trackEvent("hyperlink", "delete");
-    mutateElement(element, { link: null });
+    scene.mutateElement(element, { link: null });
     setAppState({ showHyperlinkPopup: false });
-  }, [setAppState, element]);
+  }, [setAppState, element, scene]);
 
   const onEdit = () => {
     trackEvent("hyperlink", "edit", "popup-ui");

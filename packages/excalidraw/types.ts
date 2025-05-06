@@ -1,19 +1,16 @@
-import type { Action } from "./actions/types";
-import type { Spreadsheet } from "./charts";
-import type { ClipboardData } from "./clipboard";
-import type App from "./components/App";
-import type Library from "./data/library";
-import type { FileSystemHandle } from "./data/filesystem";
-import type { IMAGE_MIME_TYPES, MIME_TYPES } from "./constants";
-import type { ContextMenuItems } from "./components/ContextMenu";
-import type { SnapLine } from "./snapping";
-import type { Merge, MaybePromise, ValueOf, MakeBrand } from "./utility-types";
-import type { CaptureUpdateActionType } from "./store";
-import type { UserIdleState } from "./constants";
-import type { ImportedDataState } from "./data/types";
-import type { SuggestedBinding } from "./element/binding";
-import type { LinearElementEditor } from "./element/linearElementEditor";
-import type { MaybeTransformHandleType } from "./element/transformHandles";
+import type {
+  IMAGE_MIME_TYPES,
+  UserIdleState,
+  throttleRAF,
+  MIME_TYPES,
+} from "@excalidraw/common";
+
+import type { SuggestedBinding } from "@excalidraw/element/binding";
+
+import type { LinearElementEditor } from "@excalidraw/element/linearElementEditor";
+
+import type { MaybeTransformHandleType } from "@excalidraw/element/transformHandles";
+
 import type {
   PointerType,
   ExcalidrawLinearElement,
@@ -37,10 +34,28 @@ import type {
   ExcalidrawIframeLikeElement,
   OrderedExcalidrawElement,
   ExcalidrawNonSelectionElement,
-} from "./element/types";
+} from "@excalidraw/element/types";
+
+import type {
+  Merge,
+  MaybePromise,
+  ValueOf,
+  MakeBrand,
+} from "@excalidraw/common/utility-types";
+
+import type { Action } from "./actions/types";
+import type { Spreadsheet } from "./charts";
+import type { ClipboardData } from "./clipboard";
+import type App from "./components/App";
+import type Library from "./data/library";
+import type { FileSystemHandle } from "./data/filesystem";
+import type { ContextMenuItems } from "./components/ContextMenu";
+import type { SnapLine } from "./snapping";
+import type { CaptureUpdateActionType } from "./store";
+import type { ImportedDataState } from "./data/types";
+
 import type { Language } from "./i18n";
 import type { isOverScrollBars } from "./scene/scrollbars";
-import type { throttleRAF } from "./utils";
 import type React from "react";
 import type { JSX } from "react";
 
@@ -121,6 +136,7 @@ export type BinaryFiles = Record<ExcalidrawElement["id"], BinaryFileData>;
 
 export type ToolType =
   | "selection"
+  | "lasso"
   | "rectangle"
   | "diamond"
   | "ellipse"
@@ -293,6 +309,8 @@ export interface AppState {
      */
     lastActiveTool: ActiveTool | null;
     locked: boolean;
+    // indicates if the current tool is temporarily switched on from the selection tool
+    fromSelection: boolean;
   } & ActiveTool;
   penMode: boolean;
   penDetected: boolean;
@@ -584,6 +602,7 @@ export interface ExcalidrawProps {
   ) => JSX.Element | null;
   aiEnabled?: boolean;
   showDeprecatedFonts?: boolean;
+  renderScrollbars?: boolean;
 }
 
 export type SceneData = {
@@ -696,6 +715,7 @@ export type AppClassProperties = {
   excalidrawContainerValue: App["excalidrawContainerValue"];
 
   onPointerUpEmitter: App["onPointerUpEmitter"];
+  updateEditorAtom: App["updateEditorAtom"];
 };
 
 export type PointerDownState = Readonly<{
@@ -707,7 +727,8 @@ export type PointerDownState = Readonly<{
   scrollbars: ReturnType<typeof isOverScrollBars>;
   // The previous pointer position
   lastCoords: { x: number; y: number };
-  // map of original elements data
+  // original element frozen snapshots so we can access the original
+  // element attribute values at time of pointerdown
   originalElements: Map<string, NonDeleted<ExcalidrawElement>>;
   resize: {
     // Handle when resizing, might change during the pointer interaction
@@ -741,6 +762,9 @@ export type PointerDownState = Readonly<{
     hasOccurred: boolean;
     // Might change during the pointer interaction
     offset: { x: number; y: number } | null;
+    // by default same as PointerDownState.origin. On alt-duplication, reset
+    // to current pointer position at time of duplication.
+    origin: { x: number; y: number };
   };
   // We need to have these in the state so that we can unsubscribe them
   eventListeners: {
@@ -762,6 +786,7 @@ export type UnsubscribeCallback = () => void;
 
 export interface ExcalidrawImperativeAPI {
   updateScene: InstanceType<typeof App>["updateScene"];
+  mutateElement: InstanceType<typeof App>["mutateElement"];
   updateLibrary: InstanceType<typeof Library>["updateLibrary"];
   resetScene: InstanceType<typeof App>["resetScene"];
   getSceneElementsIncludingDeleted: InstanceType<

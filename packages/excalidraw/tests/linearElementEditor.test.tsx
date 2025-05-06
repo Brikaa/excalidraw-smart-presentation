@@ -1,25 +1,39 @@
+import { newArrowElement } from "@excalidraw/element/newElement";
+
 import { pointCenter, pointFrom } from "@excalidraw/math";
 import { act, queryByTestId, queryByText } from "@testing-library/react";
 import React from "react";
 import { vi } from "vitest";
 
-import type { GlobalPoint } from "@excalidraw/math";
+import {
+  ROUNDNESS,
+  VERTICAL_ALIGN,
+  KEYS,
+  reseed,
+  arrayToMap,
+} from "@excalidraw/common";
 
-import { ROUNDNESS, VERTICAL_ALIGN } from "../constants";
-import { LinearElementEditor } from "../element/linearElementEditor";
+import { LinearElementEditor } from "@excalidraw/element/linearElementEditor";
 import {
   getBoundTextElementPosition,
   getBoundTextMaxWidth,
-} from "../element/textElement";
-import * as textElementUtils from "../element/textElement";
-import { wrapText } from "../element/textWrapping";
-import { Excalidraw, mutateElement } from "../index";
-import { KEYS } from "../keys";
-import { reseed } from "../random";
+} from "@excalidraw/element/textElement";
+import * as textElementUtils from "@excalidraw/element/textElement";
+import { wrapText } from "@excalidraw/element/textWrapping";
+
+import type { GlobalPoint, LocalPoint } from "@excalidraw/math";
+
+import type {
+  ExcalidrawElement,
+  ExcalidrawLinearElement,
+  ExcalidrawTextElementWithContainer,
+  FontString,
+} from "@excalidraw/element/types";
+
+import { Excalidraw } from "../index";
 import * as InteractiveCanvas from "../renderer/interactiveScene";
 import * as StaticScene from "../renderer/staticScene";
 import { API } from "../tests/helpers/api";
-import { arrayToMap } from "../utils";
 
 import { Keyboard, Pointer, UI } from "./helpers/ui";
 import {
@@ -29,13 +43,6 @@ import {
   GlobalTestState,
   unmountComponent,
 } from "./test-utils";
-
-import type {
-  ExcalidrawElement,
-  ExcalidrawLinearElement,
-  ExcalidrawTextElementWithContainer,
-  FontString,
-} from "../element/types";
 
 const renderInteractiveScene = vi.spyOn(
   InteractiveCanvas,
@@ -111,7 +118,7 @@ describe("Test Linear Elements", () => {
       ],
       roundness,
     });
-    mutateElement(line, { points: line.points });
+    h.app.scene.mutateElement(line, { points: line.points });
     API.setElements([line]);
     mouse.clickAt(p1[0], p1[1]);
     return line;
@@ -158,6 +165,24 @@ describe("Test Linear Elements", () => {
     });
     Keyboard.keyPress(KEYS.DELETE);
   };
+
+  it("should normalize the element points at creation", () => {
+    const element = newArrowElement({
+      type: "arrow",
+      points: [pointFrom<LocalPoint>(0.5, 0), pointFrom<LocalPoint>(100, 100)],
+      x: 0,
+      y: 0,
+    });
+    expect(element.points).toEqual([
+      pointFrom<LocalPoint>(0.5, 0),
+      pointFrom<LocalPoint>(100, 100),
+    ]);
+    new LinearElementEditor(element, arrayToMap(h.elements));
+    expect(element.points).toEqual([
+      pointFrom<LocalPoint>(0, 0),
+      pointFrom<LocalPoint>(99.5, 100),
+    ]);
+  });
 
   it("should not drag line and add midpoint until dragged beyond a threshold", () => {
     createTwoPointerLinearElement("line");
@@ -1246,7 +1271,7 @@ describe("Test Linear Elements", () => {
       expect(rect.y).toBe(0);
       expect(handleBindTextResizeSpy).toHaveBeenCalledWith(
         h.elements[0],
-        arrayToMap(h.elements),
+        h.app.scene,
         "nw",
         false,
       );
@@ -1359,7 +1384,7 @@ describe("Test Linear Elements", () => {
       const [origStartX, origStartY] = [line.x, line.y];
 
       act(() => {
-        LinearElementEditor.movePoints(line, [
+        LinearElementEditor.movePoints(line, h.app.scene, [
           {
             index: 0,
             point: pointFrom(line.points[0][0] + 10, line.points[0][1] + 10),

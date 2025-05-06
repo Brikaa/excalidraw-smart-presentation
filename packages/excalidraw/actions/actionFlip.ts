@@ -1,25 +1,19 @@
-import { flipHorizontal, flipVertical } from "../components/icons";
-import { getNonDeletedElements } from "../element";
+import { getNonDeletedElements } from "@excalidraw/element";
 import {
   bindOrUnbindLinearElements,
   isBindingEnabled,
-} from "../element/binding";
-import { getCommonBoundingBox } from "../element/bounds";
-import { mutateElement, newElementWith } from "../element/mutateElement";
-import { deepCopyElement } from "../element/newElement";
-import { resizeMultipleElements } from "../element/resizeElements";
+} from "@excalidraw/element/binding";
+import { getCommonBoundingBox } from "@excalidraw/element/bounds";
+import { newElementWith } from "@excalidraw/element/mutateElement";
+import { deepCopyElement } from "@excalidraw/element/duplicate";
+import { resizeMultipleElements } from "@excalidraw/element/resizeElements";
 import {
   isArrowElement,
   isElbowArrow,
   isLinearElement,
-} from "../element/typeChecks";
-import { updateFrameMembershipOfSelectedElements } from "../frame";
-import { CODES, KEYS } from "../keys";
-import { getSelectedElements } from "../scene";
-import { CaptureUpdateAction } from "../store";
-import { arrayToMap } from "../utils";
-
-import { register } from "./register";
+} from "@excalidraw/element/typeChecks";
+import { updateFrameMembershipOfSelectedElements } from "@excalidraw/element/frame";
+import { CODES, KEYS, arrayToMap } from "@excalidraw/common";
 
 import type {
   ExcalidrawArrowElement,
@@ -27,7 +21,15 @@ import type {
   ExcalidrawElement,
   NonDeleted,
   NonDeletedSceneElementsMap,
-} from "../element/types";
+} from "@excalidraw/element/types";
+
+import { getSelectedElements } from "../scene";
+import { CaptureUpdateAction } from "../store";
+
+import { flipHorizontal, flipVertical } from "../components/icons";
+
+import { register } from "./register";
+
 import type { AppClassProperties, AppState } from "../types";
 
 export const actionFlipHorizontal = register({
@@ -157,11 +159,9 @@ const flipElements = (
 
   bindOrUnbindLinearElements(
     selectedElements.filter(isLinearElement),
-    elementsMap,
-    app.scene.getNonDeletedElements(),
-    app.scene,
     isBindingEnabled(appState),
     [],
+    app.scene,
     appState.zoom,
   );
 
@@ -189,13 +189,13 @@ const flipElements = (
     getCommonBoundingBox(selectedElements);
   const [diffX, diffY] = [midX - newMidX, midY - newMidY];
   otherElements.forEach((element) =>
-    mutateElement(element, {
+    app.scene.mutateElement(element, {
       x: element.x + diffX,
       y: element.y + diffY,
     }),
   );
   elbowArrows.forEach((element) =>
-    mutateElement(element, {
+    app.scene.mutateElement(element, {
       x: element.x + diffX,
       y: element.y + diffY,
     }),

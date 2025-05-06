@@ -1,8 +1,5 @@
 import { isFiniteNumber, pointFrom } from "@excalidraw/math";
 
-import type { LocalPoint, Radians } from "@excalidraw/math";
-
-import { getDefaultAppState } from "../appState";
 import {
   DEFAULT_FONT_FAMILY,
   DEFAULT_TEXT_ALIGN,
@@ -13,43 +10,43 @@ import {
   DEFAULT_ELEMENT_PROPS,
   DEFAULT_GRID_SIZE,
   DEFAULT_GRID_STEP,
-} from "../constants";
-import {
-  getNonDeletedElements,
-  getNormalizedDimensions,
-  isInvisiblySmallElement,
-  refreshTextDimensions,
-} from "../element";
-import { normalizeFixedPoint } from "../element/binding";
+  randomId,
+  getUpdatedTimestamp,
+  updateActiveTool,
+  arrayToMap,
+  getSizeFromPoints,
+  normalizeLink,
+  getLineHeight,
+} from "@excalidraw/common";
+import { getNonDeletedElements } from "@excalidraw/element";
+import { normalizeFixedPoint } from "@excalidraw/element/binding";
 import {
   updateElbowArrowPoints,
   validateElbowPoints,
-} from "../element/elbowArrow";
-import { LinearElementEditor } from "../element/linearElementEditor";
-import { bumpVersion } from "../element/mutateElement";
-import { getContainerElement } from "../element/textElement";
-import { detectLineHeight } from "../element/textMeasurements";
+} from "@excalidraw/element/elbowArrow";
+import { LinearElementEditor } from "@excalidraw/element/linearElementEditor";
+import { bumpVersion } from "@excalidraw/element/mutateElement";
+import { getContainerElement } from "@excalidraw/element/textElement";
+import { detectLineHeight } from "@excalidraw/element/textMeasurements";
 import {
+  isArrowBoundToElement,
   isArrowElement,
   isElbowArrow,
   isFixedPointBinding,
   isLinearElement,
   isTextElement,
   isUsingAdaptiveRadius,
-} from "../element/typeChecks";
-import { getLineHeight } from "../fonts";
-import { syncInvalidIndices } from "../fractionalIndex";
-import { randomId } from "../random";
-import {
-  getNormalizedGridSize,
-  getNormalizedGridStep,
-  getNormalizedZoom,
-} from "../scene";
-import { getUpdatedTimestamp, updateActiveTool } from "../utils";
-import { arrayToMap } from "../utils";
-import { getSizeFromPoints } from "../points";
+} from "@excalidraw/element/typeChecks";
 
-import { normalizeLink } from "./url";
+import { syncInvalidIndices } from "@excalidraw/element/fractionalIndex";
+
+import { refreshTextDimensions } from "@excalidraw/element/newElement";
+
+import { getNormalizedDimensions } from "@excalidraw/element/sizeHelpers";
+
+import { isInvisiblySmallElement } from "@excalidraw/element/sizeHelpers";
+
+import type { LocalPoint, Radians } from "@excalidraw/math";
 
 import type {
   ExcalidrawArrowElement,
@@ -65,9 +62,19 @@ import type {
   OrderedExcalidrawElement,
   PointBinding,
   StrokeRoundness,
-} from "../element/types";
+} from "@excalidraw/element/types";
+
+import type { MarkOptional, Mutable } from "@excalidraw/common/utility-types";
+
+import { getDefaultAppState } from "../appState";
+
+import {
+  getNormalizedGridSize,
+  getNormalizedGridStep,
+  getNormalizedZoom,
+} from "../scene";
+
 import type { AppState, BinaryFiles, LibraryItem } from "../types";
-import type { MarkOptional, Mutable } from "../utility-types";
 import type { ImportedDataState, LegacyAppState } from "./types";
 
 type RestoredAppState = Omit<
@@ -80,6 +87,7 @@ export const AllowedExcalidrawActiveTools: Record<
   boolean
 > = {
   selection: true,
+  lasso: true,
   text: true,
   rectangle: true,
   diamond: true,
@@ -215,7 +223,7 @@ const restoreElementWithProperties = <
       "customData" in extra ? extra.customData : element.customData;
   }
 
-  return {
+  const ret = {
     // spread the original element properties to not lose unknown ones
     // for forward-compatibility
     ...element,
@@ -224,6 +232,12 @@ const restoreElementWithProperties = <
     ...getNormalizedDimensions(base),
     ...extra,
   } as unknown as T;
+
+  // strip legacy props (migrated in previous steps)
+  delete ret.strokeSharpness;
+  delete ret.boundElementIds;
+
+  return ret;
 };
 
 const restoreElement = (
@@ -426,7 +440,7 @@ const repairContainerElement = (
             // if defined, lest boundElements is stale
             !boundElement.containerId
           ) {
-            (boundElement as Mutable<ExcalidrawTextElement>).containerId =
+            (boundElement as Mutable<typeof boundElement>).containerId =
               container.id;
           }
         }
@@ -450,6 +464,10 @@ const repairBoundElement = (
   const container = boundElement.containerId
     ? elementsMap.get(boundElement.containerId)
     : null;
+
+  (boundElement as Mutable<typeof boundElement>).angle = (
+    isArrowElement(container) ? 0 : container?.angle ?? 0
+  ) as Radians;
 
   if (!container) {
     boundElement.containerId = null;
@@ -577,8 +595,7 @@ export const restoreElements = (
   return restoredElements.map((element) => {
     if (
       isElbowArrow(element) &&
-      element.startBinding == null &&
-      element.endBinding == null &&
+      !isArrowBoundToElement(element) &&
       !validateElbowPoints(element.points)
     ) {
       return {

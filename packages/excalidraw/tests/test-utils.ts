@@ -9,19 +9,22 @@ import {
 } from "@testing-library/react";
 import ansi from "ansicolor";
 
-import { STORAGE_KEYS } from "../../../excalidraw-app/app_constants";
-import { ORIG_ID } from "../constants";
-import { getSelectedElements } from "../scene/selection";
-import { arrayToMap } from "../utils";
+import { ORIG_ID, arrayToMap } from "@excalidraw/common";
 
-import { UI } from "./helpers/ui";
+import { getSelectedElements } from "@excalidraw/element/selection";
+
+import type { ExcalidrawElement } from "@excalidraw/element/types";
+
+import type { AllPossibleKeys } from "@excalidraw/common/utility-types";
+
+import { STORAGE_KEYS } from "../../../excalidraw-app/app_constants";
+
+import { Pointer, UI } from "./helpers/ui";
 import * as toolQueries from "./queries/toolQueries";
 
 import type { RenderResult, RenderOptions } from "@testing-library/react";
 
 import type { ImportedDataState } from "../data/types";
-import type { ExcalidrawElement } from "../element/types";
-import type { AllPossibleKeys } from "../utility-types";
 
 export { cleanup as unmountComponent };
 
@@ -39,6 +42,10 @@ type TestRenderFn = (
 ) => Promise<RenderResult<typeof customQueries>>;
 
 const renderApp: TestRenderFn = async (ui, options) => {
+  // when tests reuse Pointer instances let's reset the last
+  // pointer poisitions so there's no leak between tests
+  Pointer.resetAll();
+
   if (options?.localStorageData) {
     initLocalStorage(options.localStorageData);
     delete options.localStorageData;
