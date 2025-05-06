@@ -71,19 +71,21 @@ const performDuplication: (intoNextFrame?: boolean) => ActionFn =
           const frames = elements.filter(
             (e) => !e.isDeleted && e.type === "frame",
           );
-          frames.sort((e1, e2) => e1.y - e2.y);
           const origFrame = frames.find((f) => f.id === origElement.frameId);
 
-          let newFrame = origFrame;
-          for (let i = 0; i < frames.length - 1; ++i) {
-            if (frames[i].id === origElement.frameId) {
-              newFrame = frames[i + 1];
-              break;
+          let newFrame = null;
+          for (const frame of frames) {
+            if (
+              origFrame &&
+              frame.y > origFrame.y &&
+              (newFrame === null || frame.y < newFrame.y)
+            ) {
+              newFrame = frame;
             }
           }
 
-          // Only if frame is not last, otherwise it's going to be a normal duplication
-          if (newFrame && origFrame && newFrame !== origFrame) {
+          // Only if frame is not last — otherwise it's going to be a normal duplication
+          if (newFrame && origFrame) {
             return {
               x: newFrame.x + (origElement.x - origFrame.x),
               y: newFrame.y + (origElement.y - origFrame.y),
