@@ -3,6 +3,7 @@ import {
   KEYS,
   arrayToMap,
   getShortcutKey,
+  matchKey,
 } from "@excalidraw/common";
 
 import { getNonDeletedElements } from "@excalidraw/element";
@@ -18,6 +19,8 @@ import { syncMovedIndices } from "@excalidraw/element/fractionalIndex";
 
 import { duplicateElements } from "@excalidraw/element/duplicate";
 
+import type { ActionFn } from "@excalidraw/excalidraw/actions/types";
+
 import { ToolButton } from "../components/ToolButton";
 import { DuplicateIcon } from "../components/icons";
 
@@ -27,12 +30,8 @@ import { CaptureUpdateAction } from "../store";
 
 import { register } from "./register";
 
-export const actionDuplicateSelection = register({
-  name: "duplicateSelection",
-  label: "labels.duplicateSelection",
-  icon: DuplicateIcon,
-  trackEvent: { category: "element" },
-  perform: (elements, appState, formData, app) => {
+const performDuplication: (intoNextFrame?: boolean) => ActionFn =
+  (intoNextFrame?: boolean) => (elements, appState, formData, app) => {
     if (appState.selectedElementsAreBeingDragged) {
       return false;
     }
@@ -68,13 +67,40 @@ export const actionDuplicateSelection = register({
       appState,
       randomizeSeed: true,
       overrides: ({ origElement, origIdToDuplicateId }) => {
-        const duplicateFrameId =
-          origElement.frameId && origIdToDuplicateId.get(origElement.frameId);
-        return {
+        let newProperties = {
           x: origElement.x + DEFAULT_GRID_SIZE / 2,
           y: origElement.y + DEFAULT_GRID_SIZE / 2,
-          frameId: duplicateFrameId ?? origElement.frameId,
+          frameId: origElement.frameId,
         };
+        if (origElement.frameId && intoNextFrame) {
+          const frames = elements.filter(
+            (e) => !e.isDeleted && e.type === "frame",
+          );
+          frames.sort((e1, e2) => e1.y - e2.y);
+          const origFrame = frames.find((f) => f.id === origElement.frameId);
+
+          let newFrame = origFrame;
+          for (let i = 0; i < frames.length - 1; ++i) {
+            if (frames[i].id === origElement.frameId) {
+              newFrame = frames[i + 1];
+              break;
+            }
+          }
+
+          // Only if frame is not last, otherwise it's going to be a normal duplication
+          if (newFrame && origFrame && newFrame !== origFrame) {
+            newProperties = {
+              x: newFrame.x + (origElement.x - origFrame.x),
+              y: newFrame.y + (origElement.y - origFrame.y),
+              frameId: newFrame.id,
+            };
+          }
+        } else {
+          const duplicateFrameId =
+            origElement.frameId && origIdToDuplicateId.get(origElement.frameId);
+          newProperties.frameId = duplicateFrameId ?? origElement.frameId;
+        }
+        return newProperties;
       },
     });
 
@@ -103,7 +129,14 @@ export const actionDuplicateSelection = register({
       },
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
-  },
+  };
+
+export const actionDuplicateSelection = register({
+  name: "duplicateSelection",
+  label: "labels.duplicateSelection",
+  icon: DuplicateIcon,
+  trackEvent: { category: "element" },
+  perform: performDuplication(),
   keyTest: (event) => event[KEYS.CTRL_OR_CMD] && event.key === KEYS.D,
   PanelComponent: ({ elements, appState, updateData }) => (
     <ToolButton
@@ -113,6 +146,28 @@ export const actionDuplicateSelection = register({
         "CtrlOrCmd+D",
       )}`}
       aria-label={t("labels.duplicateSelection")}
+      onClick={() => updateData(null)}
+      visible={isSomeElementSelected(getNonDeletedElements(elements), appState)}
+    />
+  ),
+});
+
+export const actionDuplicateSelectionIntoNextFrame = register({
+  name: "duplicateSelectionIntoNextFrame",
+  label: "labels.duplicateSelectionIntoNextFrame",
+  icon: DuplicateIcon,
+  trackEvent: { category: "element" },
+  perform: performDuplication(true),
+  keyTest: (event) =>
+    event[KEYS.CTRL_OR_CMD] && event.shiftKey && matchKey(event, KEYS.D),
+  PanelComponent: ({ elements, appState, updateData }) => (
+    <ToolButton
+      type="button"
+      icon={DuplicateIcon}
+      title={`${t("labels.duplicateSelectionIntoNextFrame")} — ${getShortcutKey(
+        "CtrlOrCmd+Shift+D",
+      )}`}
+      aria-label={t("labels.duplicateSelectionIntoNextFrame")}
       onClick={() => updateData(null)}
       visible={isSomeElementSelected(getNonDeletedElements(elements), appState)}
     />

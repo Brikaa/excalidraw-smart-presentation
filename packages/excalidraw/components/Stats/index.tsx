@@ -301,7 +301,7 @@ export const StatsInner = memo(
                       </StatsRow>
 
                       <StatsRow>
-                        <Name element={singleElement} />
+                        <Name element={singleElement} scene={scene} />
                       </StatsRow>
                       <StatsRow>
                         <Position

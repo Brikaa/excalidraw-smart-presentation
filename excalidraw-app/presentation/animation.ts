@@ -1,11 +1,10 @@
-import { isTransparent } from "@excalidraw/excalidraw/utils";
-
+import { isTransparent } from "@excalidraw/common";
 import { isLinearElement } from "@excalidraw/excalidraw";
 
 import type {
   ExcalidrawElement,
   ExcalidrawTextElement,
-} from "@excalidraw/excalidraw/element/types";
+} from "@excalidraw/element/types";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 
 const hexToRgba = (hex: string) => {
