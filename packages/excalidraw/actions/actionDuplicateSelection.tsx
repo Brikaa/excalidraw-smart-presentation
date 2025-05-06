@@ -67,15 +67,6 @@ const performDuplication: (intoNextFrame?: boolean) => ActionFn =
       appState,
       randomizeSeed: true,
       overrides: ({ origElement, origIdToDuplicateId }) => {
-        const duplicateFrameId =
-          origElement.frameId && origIdToDuplicateId.get(origElement.frameId);
-
-        let newProperties = {
-          x: origElement.x + DEFAULT_GRID_SIZE / 2,
-          y: origElement.y + DEFAULT_GRID_SIZE / 2,
-          frameId: duplicateFrameId ?? origElement.frameId,
-        };
-
         if (origElement.frameId && intoNextFrame) {
           const frames = elements.filter(
             (e) => !e.isDeleted && e.type === "frame",
@@ -93,7 +84,7 @@ const performDuplication: (intoNextFrame?: boolean) => ActionFn =
 
           // Only if frame is not last, otherwise it's going to be a normal duplication
           if (newFrame && origFrame && newFrame !== origFrame) {
-            newProperties = {
+            return {
               x: newFrame.x + (origElement.x - origFrame.x),
               y: newFrame.y + (origElement.y - origFrame.y),
               frameId: newFrame.id,
@@ -101,7 +92,13 @@ const performDuplication: (intoNextFrame?: boolean) => ActionFn =
           }
         }
 
-        return newProperties;
+        const duplicateFrameId =
+          origElement.frameId && origIdToDuplicateId.get(origElement.frameId);
+        return {
+          x: origElement.x + DEFAULT_GRID_SIZE / 2,
+          y: origElement.y + DEFAULT_GRID_SIZE / 2,
+          frameId: duplicateFrameId ?? origElement.frameId,
+        };
       },
     });
 
