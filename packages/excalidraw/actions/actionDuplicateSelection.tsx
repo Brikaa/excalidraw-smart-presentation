@@ -67,11 +67,15 @@ const performDuplication: (intoNextFrame?: boolean) => ActionFn =
       appState,
       randomizeSeed: true,
       overrides: ({ origElement, origIdToDuplicateId }) => {
+        const duplicateFrameId =
+          origElement.frameId && origIdToDuplicateId.get(origElement.frameId);
+
         let newProperties = {
           x: origElement.x + DEFAULT_GRID_SIZE / 2,
           y: origElement.y + DEFAULT_GRID_SIZE / 2,
-          frameId: origElement.frameId,
+          frameId: duplicateFrameId ?? origElement.frameId,
         };
+
         if (origElement.frameId && intoNextFrame) {
           const frames = elements.filter(
             (e) => !e.isDeleted && e.type === "frame",
@@ -95,11 +99,8 @@ const performDuplication: (intoNextFrame?: boolean) => ActionFn =
               frameId: newFrame.id,
             };
           }
-        } else {
-          const duplicateFrameId =
-            origElement.frameId && origIdToDuplicateId.get(origElement.frameId);
-          newProperties.frameId = duplicateFrameId ?? origElement.frameId;
         }
+
         return newProperties;
       },
     });
