@@ -123,6 +123,8 @@ export function PresentationScene(props: {
     if (loadedInitialFrame || !excalidrawAPI) {
       return;
     }
+    // Disable rAF throttle since we handle our own rAF
+    window.EXCALIDRAW_THROTTLE_RENDER = false;
     renderFrame(initialFrameIndex);
     setTimeout(
       () =>

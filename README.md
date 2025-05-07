@@ -53,4 +53,3 @@ https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
 - Not usable on touch-screens and requires a keyboard since arrow keys are the only way to navigate slides.
 - The "Present" button is not shown on mobile/small screens, users must open a new tab and append `#presentation=0` manually to the website's link.
 - Animation duration (300 ms) and type (linear) are not customizable.
-- Animations can sometimes be slightly choppy, though this is not a major issue.
