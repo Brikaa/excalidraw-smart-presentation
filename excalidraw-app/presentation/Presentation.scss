@@ -1,4 +1,4 @@
-#presentation {
+.presentation-presentation {
   width: 100%;
   height: 100%;
   background: black;
@@ -6,5 +6,29 @@
   place-items: center;
   canvas {
     cursor: default !important;
+  }
+}
+
+.presentation-overlays {
+  position: absolute;
+  z-index: 1000;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  .presentation-overlay {
+    height: 100%;
+    &:first-child {
+      flex: 0 0 40%;
+      &:hover {
+        cursor: nw-resize;
+      }
+    }
+    &:last-child {
+      flex: 0 0 60%;
+      &:hover {
+        cursor: ne-resize;
+      }
+    }
   }
 }

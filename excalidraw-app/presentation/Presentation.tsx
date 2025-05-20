@@ -253,15 +253,22 @@ export function PresentationScene(props: {
 
   // Render
   return (
-    <div id="presentation" ref={presentationSceneDiv}>
+    <div className="presentation-presentation" ref={presentationSceneDiv}>
       {/* We want the canvas to be in a div that has the exact same size as the scaled (zoomed in) frame */}
       {/* The rest is going to be black through the outer div */}
       <div
         style={{
           width: `${frames[frameIndex].width * scale}px`,
           height: `${frames[frameIndex].height * scale}px`,
+          position: "relative",
         }}
       >
+        {/* Used for navigating slides using the mouse */}
+        <div className="presentation-overlays">
+          <div className="presentation-overlay"></div>
+          <div className="presentation-overlay"></div>
+        </div>
+
         <Excalidraw
           excalidrawAPI={loadExcalidrawAPI}
           viewModeEnabled
