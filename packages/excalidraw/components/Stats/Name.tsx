@@ -1,5 +1,5 @@
 import type { ExcalidrawElement } from "@excalidraw/element/types";
-import type Scene from "@excalidraw/element/Scene";
+import type { Scene } from "@excalidraw/element";
 
 import "./Name.scss";
 
