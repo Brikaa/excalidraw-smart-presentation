@@ -21,13 +21,13 @@
     &:first-child {
       flex: 0 0 40%;
       &:hover {
-        cursor: nw-resize;
+        cursor: url("/left-pointer-shadow.svg") 8 10, nw-resize;
       }
     }
     &:last-child {
       flex: 0 0 60%;
       &:hover {
-        cursor: ne-resize;
+        cursor: url("/right-pointer-shadow.svg") 32 10, ne-resize;
       }
     }
   }

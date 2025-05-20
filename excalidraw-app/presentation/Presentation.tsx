@@ -213,19 +213,27 @@ export function PresentationScene(props: {
     );
   }, [excalidrawAPI, scale]);
 
+  const nextSlide = useCallback(() => {
+    if (animationStartTime === null && frameIndex !== frames.length - 1) {
+      renderFrame(frameIndex + 1);
+    }
+  }, [frameIndex, frames.length, renderFrame]);
+
+  const prevSlide = useCallback(() => {
+    if (animationStartTime === null && frameIndex !== 0) {
+      renderFrame(frameIndex - 1);
+    }
+  }, [frameIndex, renderFrame]);
+
   // Event listeners
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       e.stopPropagation();
-      if (animationStartTime !== null) {
-        // Do nothing when there is an active animation
-        return;
+      if (e.key === KEYS.ARROW_RIGHT) {
+        nextSlide();
       }
-      if (e.key === KEYS.ARROW_RIGHT && frameIndex !== frames.length - 1) {
-        renderFrame(frameIndex + 1);
-      }
-      if (e.key === KEYS.ARROW_LEFT && frameIndex !== 0) {
-        renderFrame(frameIndex - 1);
+      if (e.key === KEYS.ARROW_LEFT) {
+        prevSlide();
       }
     };
 
@@ -245,7 +253,7 @@ export function PresentationScene(props: {
       );
       document.removeEventListener("wheel", handlePointerDownOrWheel, true);
     };
-  }, [frameIndex, frames.length, renderFrame]);
+  }, [frameIndex, frames.length, nextSlide, prevSlide, renderFrame]);
 
   const loadExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
     setExcalidrawAPI(api);
@@ -265,8 +273,8 @@ export function PresentationScene(props: {
       >
         {/* Used for navigating slides using the mouse */}
         <div className="presentation-overlays">
-          <div className="presentation-overlay"></div>
-          <div className="presentation-overlay"></div>
+          <div className="presentation-overlay" onClick={prevSlide}></div>
+          <div className="presentation-overlay" onClick={nextSlide}></div>
         </div>
 
         <Excalidraw
