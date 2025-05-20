@@ -20,6 +20,7 @@ import {
   getShortcutKey,
   tupleToCoors,
   getLineHeight,
+  reduceToCommonValue,
 } from "@excalidraw/common";
 
 import { getNonDeletedElements } from "@excalidraw/element";
@@ -30,16 +31,16 @@ import {
   calculateFixedPointForElbowArrowBinding,
   getHoveredElementForBinding,
   updateBoundElements,
-} from "@excalidraw/element/binding";
+} from "@excalidraw/element";
 
-import { LinearElementEditor } from "@excalidraw/element/linearElementEditor";
+import { LinearElementEditor } from "@excalidraw/element";
 
-import { newElementWith } from "@excalidraw/element/mutateElement";
+import { newElementWith } from "@excalidraw/element";
 
 import {
   getBoundTextElement,
   redrawTextBoundingBox,
-} from "@excalidraw/element/textElement";
+} from "@excalidraw/element";
 
 import {
   isArrowElement,
@@ -48,11 +49,13 @@ import {
   isLinearElement,
   isTextElement,
   isUsingAdaptiveRadius,
-} from "@excalidraw/element/typeChecks";
+} from "@excalidraw/element";
 
-import { hasStrokeColor } from "@excalidraw/element/comparisons";
+import { hasStrokeColor } from "@excalidraw/element";
 
-import { updateElbowArrowPoints } from "@excalidraw/element/elbowArrow";
+import { updateElbowArrowPoints } from "@excalidraw/element";
+
+import { CaptureUpdateAction } from "@excalidraw/element";
 
 import type { LocalPoint } from "@excalidraw/math";
 
@@ -68,10 +71,12 @@ import type {
   VerticalAlign,
 } from "@excalidraw/element/types";
 
-import type Scene from "@excalidraw/element/Scene";
+import type { Scene } from "@excalidraw/element";
+
+import type { CaptureUpdateActionType } from "@excalidraw/element";
 
 import { trackEvent } from "../analytics";
-import { ButtonIconSelect } from "../components/ButtonIconSelect";
+import { RadioSelection } from "../components/RadioSelection";
 import { ColorPicker } from "../components/ColorPicker/ColorPicker";
 import { FontPicker } from "../components/FontPicker/FontPicker";
 import { IconPicker } from "../components/IconPicker";
@@ -126,16 +131,13 @@ import { Fonts } from "../fonts";
 import { getLanguage, t } from "../i18n";
 import {
   canHaveArrowheads,
-  getCommonAttributeOfSelectedElements,
   getSelectedElements,
   getTargetElements,
   isSomeElementSelected,
 } from "../scene";
-import { CaptureUpdateAction } from "../store";
 
 import { register } from "./register";
 
-import type { CaptureUpdateActionType } from "../store";
 import type { AppClassProperties, AppState, Primitive } from "../types";
 
 const FONT_SIZE_RELATIVE_INCREASE_STEP = 0.1;
@@ -165,12 +167,12 @@ export const changeProperty = (
 
 export const getFormValue = function <T extends Primitive>(
   elements: readonly ExcalidrawElement[],
-  appState: AppState,
+  app: AppClassProperties,
   getAttribute: (element: ExcalidrawElement) => T,
   isRelevantElement: true | ((element: ExcalidrawElement) => boolean),
   defaultValue: T | ((isSomeElementSelected: boolean) => T),
 ): T {
-  const editingTextElement = appState.editingTextElement;
+  const editingTextElement = app.state.editingTextElement;
   const nonDeletedElements = getNonDeletedElements(elements);
 
   let ret: T | null = null;
@@ -180,17 +182,17 @@ export const getFormValue = function <T extends Primitive>(
   }
 
   if (!ret) {
-    const hasSelection = isSomeElementSelected(nonDeletedElements, appState);
+    const hasSelection = isSomeElementSelected(nonDeletedElements, app.state);
 
     if (hasSelection) {
+      const selectedElements = app.scene.getSelectedElements(app.state);
+      const targetElements =
+        isRelevantElement === true
+          ? selectedElements
+          : selectedElements.filter((el) => isRelevantElement(el));
+
       ret =
-        getCommonAttributeOfSelectedElements(
-          isRelevantElement === true
-            ? nonDeletedElements
-            : nonDeletedElements.filter((el) => isRelevantElement(el)),
-          appState,
-          getAttribute,
-        ) ??
+        reduceToCommonValue(targetElements, getAttribute) ??
         (typeof defaultValue === "function"
           ? defaultValue(true)
           : defaultValue);
@@ -318,7 +320,7 @@ export const actionChangeStrokeColor = register({
         : CaptureUpdateAction.EVENTUALLY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData, appProps }) => (
+  PanelComponent: ({ elements, appState, updateData, app }) => (
     <>
       <h3 aria-hidden="true">{t("labels.stroke")}</h3>
       <ColorPicker
@@ -328,10 +330,11 @@ export const actionChangeStrokeColor = register({
         label={t("labels.stroke")}
         color={getFormValue(
           elements,
-          appState,
+          app,
           (element) => element.strokeColor,
           true,
-          appState.currentItemStrokeColor,
+          (hasSelection) =>
+            !hasSelection ? appState.currentItemStrokeColor : null,
         )}
         onChange={(color) => updateData({ currentItemStrokeColor: color })}
         elements={elements}
@@ -364,7 +367,7 @@ export const actionChangeBackgroundColor = register({
         : CaptureUpdateAction.EVENTUALLY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData, appProps }) => (
+  PanelComponent: ({ elements, appState, updateData, app }) => (
     <>
       <h3 aria-hidden="true">{t("labels.background")}</h3>
       <ColorPicker
@@ -374,10 +377,11 @@ export const actionChangeBackgroundColor = register({
         label={t("labels.background")}
         color={getFormValue(
           elements,
-          appState,
+          app,
           (element) => element.backgroundColor,
           true,
-          appState.currentItemBackgroundColor,
+          (hasSelection) =>
+            !hasSelection ? appState.currentItemBackgroundColor : null,
         )}
         onChange={(color) => updateData({ currentItemBackgroundColor: color })}
         elements={elements}
@@ -408,7 +412,7 @@ export const actionChangeFillStyle = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => {
+  PanelComponent: ({ elements, appState, updateData, app }) => {
     const selectedElements = getSelectedElements(elements, appState);
     const allElementsZigZag =
       selectedElements.length > 0 &&
@@ -417,50 +421,52 @@ export const actionChangeFillStyle = register({
     return (
       <fieldset>
         <legend>{t("labels.fill")}</legend>
-        <ButtonIconSelect
-          type="button"
-          options={[
-            {
-              value: "hachure",
-              text: `${
-                allElementsZigZag ? t("labels.zigzag") : t("labels.hachure")
-              } (${getShortcutKey("Alt-Click")})`,
-              icon: allElementsZigZag ? FillZigZagIcon : FillHachureIcon,
-              active: allElementsZigZag ? true : undefined,
-              testId: `fill-hachure`,
-            },
-            {
-              value: "cross-hatch",
-              text: t("labels.crossHatch"),
-              icon: FillCrossHatchIcon,
-              testId: `fill-cross-hatch`,
-            },
-            {
-              value: "solid",
-              text: t("labels.solid"),
-              icon: FillSolidIcon,
-              testId: `fill-solid`,
-            },
-          ]}
-          value={getFormValue(
-            elements,
-            appState,
-            (element) => element.fillStyle,
-            (element) => element.hasOwnProperty("fillStyle"),
-            (hasSelection) =>
-              hasSelection ? null : appState.currentItemFillStyle,
-          )}
-          onClick={(value, event) => {
-            const nextValue =
-              event.altKey &&
-              value === "hachure" &&
-              selectedElements.every((el) => el.fillStyle === "hachure")
-                ? "zigzag"
-                : value;
+        <div className="buttonList">
+          <RadioSelection
+            type="button"
+            options={[
+              {
+                value: "hachure",
+                text: `${
+                  allElementsZigZag ? t("labels.zigzag") : t("labels.hachure")
+                } (${getShortcutKey("Alt-Click")})`,
+                icon: allElementsZigZag ? FillZigZagIcon : FillHachureIcon,
+                active: allElementsZigZag ? true : undefined,
+                testId: `fill-hachure`,
+              },
+              {
+                value: "cross-hatch",
+                text: t("labels.crossHatch"),
+                icon: FillCrossHatchIcon,
+                testId: `fill-cross-hatch`,
+              },
+              {
+                value: "solid",
+                text: t("labels.solid"),
+                icon: FillSolidIcon,
+                testId: `fill-solid`,
+              },
+            ]}
+            value={getFormValue(
+              elements,
+              app,
+              (element) => element.fillStyle,
+              (element) => element.hasOwnProperty("fillStyle"),
+              (hasSelection) =>
+                hasSelection ? null : appState.currentItemFillStyle,
+            )}
+            onClick={(value, event) => {
+              const nextValue =
+                event.altKey &&
+                value === "hachure" &&
+                selectedElements.every((el) => el.fillStyle === "hachure")
+                  ? "zigzag"
+                  : value;
 
-            updateData(nextValue);
-          }}
-        />
+              updateData(nextValue);
+            }}
+          />
+        </div>
       </fieldset>
     );
   },
@@ -481,41 +487,43 @@ export const actionChangeStrokeWidth = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => (
+  PanelComponent: ({ elements, appState, updateData, app }) => (
     <fieldset>
       <legend>{t("labels.strokeWidth")}</legend>
-      <ButtonIconSelect
-        group="stroke-width"
-        options={[
-          {
-            value: STROKE_WIDTH.thin,
-            text: t("labels.thin"),
-            icon: StrokeWidthBaseIcon,
-            testId: "strokeWidth-thin",
-          },
-          {
-            value: STROKE_WIDTH.bold,
-            text: t("labels.bold"),
-            icon: StrokeWidthBoldIcon,
-            testId: "strokeWidth-bold",
-          },
-          {
-            value: STROKE_WIDTH.extraBold,
-            text: t("labels.extraBold"),
-            icon: StrokeWidthExtraBoldIcon,
-            testId: "strokeWidth-extraBold",
-          },
-        ]}
-        value={getFormValue(
-          elements,
-          appState,
-          (element) => element.strokeWidth,
-          (element) => element.hasOwnProperty("strokeWidth"),
-          (hasSelection) =>
-            hasSelection ? null : appState.currentItemStrokeWidth,
-        )}
-        onChange={(value) => updateData(value)}
-      />
+      <div className="buttonList">
+        <RadioSelection
+          group="stroke-width"
+          options={[
+            {
+              value: STROKE_WIDTH.thin,
+              text: t("labels.thin"),
+              icon: StrokeWidthBaseIcon,
+              testId: "strokeWidth-thin",
+            },
+            {
+              value: STROKE_WIDTH.bold,
+              text: t("labels.bold"),
+              icon: StrokeWidthBoldIcon,
+              testId: "strokeWidth-bold",
+            },
+            {
+              value: STROKE_WIDTH.extraBold,
+              text: t("labels.extraBold"),
+              icon: StrokeWidthExtraBoldIcon,
+              testId: "strokeWidth-extraBold",
+            },
+          ]}
+          value={getFormValue(
+            elements,
+            app,
+            (element) => element.strokeWidth,
+            (element) => element.hasOwnProperty("strokeWidth"),
+            (hasSelection) =>
+              hasSelection ? null : appState.currentItemStrokeWidth,
+          )}
+          onChange={(value) => updateData(value)}
+        />
+      </div>
     </fieldset>
   ),
 });
@@ -536,38 +544,40 @@ export const actionChangeSloppiness = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => (
+  PanelComponent: ({ elements, appState, updateData, app }) => (
     <fieldset>
       <legend>{t("labels.sloppiness")}</legend>
-      <ButtonIconSelect
-        group="sloppiness"
-        options={[
-          {
-            value: 0,
-            text: t("labels.architect"),
-            icon: SloppinessArchitectIcon,
-          },
-          {
-            value: 1,
-            text: t("labels.artist"),
-            icon: SloppinessArtistIcon,
-          },
-          {
-            value: 2,
-            text: t("labels.cartoonist"),
-            icon: SloppinessCartoonistIcon,
-          },
-        ]}
-        value={getFormValue(
-          elements,
-          appState,
-          (element) => element.roughness,
-          (element) => element.hasOwnProperty("roughness"),
-          (hasSelection) =>
-            hasSelection ? null : appState.currentItemRoughness,
-        )}
-        onChange={(value) => updateData(value)}
-      />
+      <div className="buttonList">
+        <RadioSelection
+          group="sloppiness"
+          options={[
+            {
+              value: 0,
+              text: t("labels.architect"),
+              icon: SloppinessArchitectIcon,
+            },
+            {
+              value: 1,
+              text: t("labels.artist"),
+              icon: SloppinessArtistIcon,
+            },
+            {
+              value: 2,
+              text: t("labels.cartoonist"),
+              icon: SloppinessCartoonistIcon,
+            },
+          ]}
+          value={getFormValue(
+            elements,
+            app,
+            (element) => element.roughness,
+            (element) => element.hasOwnProperty("roughness"),
+            (hasSelection) =>
+              hasSelection ? null : appState.currentItemRoughness,
+          )}
+          onChange={(value) => updateData(value)}
+        />
+      </div>
     </fieldset>
   ),
 });
@@ -587,38 +597,40 @@ export const actionChangeStrokeStyle = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => (
+  PanelComponent: ({ elements, appState, updateData, app }) => (
     <fieldset>
       <legend>{t("labels.strokeStyle")}</legend>
-      <ButtonIconSelect
-        group="strokeStyle"
-        options={[
-          {
-            value: "solid",
-            text: t("labels.strokeStyle_solid"),
-            icon: StrokeWidthBaseIcon,
-          },
-          {
-            value: "dashed",
-            text: t("labels.strokeStyle_dashed"),
-            icon: StrokeStyleDashedIcon,
-          },
-          {
-            value: "dotted",
-            text: t("labels.strokeStyle_dotted"),
-            icon: StrokeStyleDottedIcon,
-          },
-        ]}
-        value={getFormValue(
-          elements,
-          appState,
-          (element) => element.strokeStyle,
-          (element) => element.hasOwnProperty("strokeStyle"),
-          (hasSelection) =>
-            hasSelection ? null : appState.currentItemStrokeStyle,
-        )}
-        onChange={(value) => updateData(value)}
-      />
+      <div className="buttonList">
+        <RadioSelection
+          group="strokeStyle"
+          options={[
+            {
+              value: "solid",
+              text: t("labels.strokeStyle_solid"),
+              icon: StrokeWidthBaseIcon,
+            },
+            {
+              value: "dashed",
+              text: t("labels.strokeStyle_dashed"),
+              icon: StrokeStyleDashedIcon,
+            },
+            {
+              value: "dotted",
+              text: t("labels.strokeStyle_dotted"),
+              icon: StrokeStyleDottedIcon,
+            },
+          ]}
+          value={getFormValue(
+            elements,
+            app,
+            (element) => element.strokeStyle,
+            (element) => element.hasOwnProperty("strokeStyle"),
+            (hasSelection) =>
+              hasSelection ? null : appState.currentItemStrokeStyle,
+          )}
+          onChange={(value) => updateData(value)}
+        />
+      </div>
     </fieldset>
   ),
 });
@@ -642,13 +654,8 @@ export const actionChangeOpacity = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => (
-    <Range
-      updateData={updateData}
-      elements={elements}
-      appState={appState}
-      testId="opacity"
-    />
+  PanelComponent: ({ app, updateData }) => (
+    <Range updateData={updateData} app={app} testId="opacity" />
   ),
 });
 
@@ -662,63 +669,65 @@ export const actionChangeFontSize = register({
   PanelComponent: ({ elements, appState, updateData, app }) => (
     <fieldset>
       <legend>{t("labels.fontSize")}</legend>
-      <ButtonIconSelect
-        group="font-size"
-        options={[
-          {
-            value: 16,
-            text: t("labels.small"),
-            icon: FontSizeSmallIcon,
-            testId: "fontSize-small",
-          },
-          {
-            value: 20,
-            text: t("labels.medium"),
-            icon: FontSizeMediumIcon,
-            testId: "fontSize-medium",
-          },
-          {
-            value: 28,
-            text: t("labels.large"),
-            icon: FontSizeLargeIcon,
-            testId: "fontSize-large",
-          },
-          {
-            value: 36,
-            text: t("labels.veryLarge"),
-            icon: FontSizeExtraLargeIcon,
-            testId: "fontSize-veryLarge",
-          },
-        ]}
-        value={getFormValue(
-          elements,
-          appState,
-          (element) => {
-            if (isTextElement(element)) {
-              return element.fontSize;
-            }
-            const boundTextElement = getBoundTextElement(
-              element,
-              app.scene.getNonDeletedElementsMap(),
-            );
-            if (boundTextElement) {
-              return boundTextElement.fontSize;
-            }
-            return null;
-          },
-          (element) =>
-            isTextElement(element) ||
-            getBoundTextElement(
-              element,
-              app.scene.getNonDeletedElementsMap(),
-            ) !== null,
-          (hasSelection) =>
-            hasSelection
-              ? null
-              : appState.currentItemFontSize || DEFAULT_FONT_SIZE,
-        )}
-        onChange={(value) => updateData(value)}
-      />
+      <div className="buttonList">
+        <RadioSelection
+          group="font-size"
+          options={[
+            {
+              value: 16,
+              text: t("labels.small"),
+              icon: FontSizeSmallIcon,
+              testId: "fontSize-small",
+            },
+            {
+              value: 20,
+              text: t("labels.medium"),
+              icon: FontSizeMediumIcon,
+              testId: "fontSize-medium",
+            },
+            {
+              value: 28,
+              text: t("labels.large"),
+              icon: FontSizeLargeIcon,
+              testId: "fontSize-large",
+            },
+            {
+              value: 36,
+              text: t("labels.veryLarge"),
+              icon: FontSizeExtraLargeIcon,
+              testId: "fontSize-veryLarge",
+            },
+          ]}
+          value={getFormValue(
+            elements,
+            app,
+            (element) => {
+              if (isTextElement(element)) {
+                return element.fontSize;
+              }
+              const boundTextElement = getBoundTextElement(
+                element,
+                app.scene.getNonDeletedElementsMap(),
+              );
+              if (boundTextElement) {
+                return boundTextElement.fontSize;
+              }
+              return null;
+            },
+            (element) =>
+              isTextElement(element) ||
+              getBoundTextElement(
+                element,
+                app.scene.getNonDeletedElementsMap(),
+              ) !== null,
+            (hasSelection) =>
+              hasSelection
+                ? null
+                : appState.currentItemFontSize || DEFAULT_FONT_SIZE,
+          )}
+          onChange={(value) => updateData(value)}
+        />
+      </div>
     </fieldset>
   ),
 });
@@ -990,7 +999,7 @@ export const actionChangeFontFamily = register({
       ) =>
         getFormValue(
           elementsArray,
-          appState,
+          app,
           (element) => {
             if (isTextElement(element)) {
               return element.fontFamily;
@@ -1028,7 +1037,7 @@ export const actionChangeFontFamily = register({
 
       // popup props are not in sync, hence we are in the middle of an update, so keeping the previous value we've had
       return prevSelectedFontFamilyRef.current;
-    }, [batchedData.openPopup, appState, elements, app.scene]);
+    }, [batchedData.openPopup, appState, elements, app]);
 
     useEffect(() => {
       prevSelectedFontFamilyRef.current = selectedFontFamily;
@@ -1190,52 +1199,54 @@ export const actionChangeTextAlign = register({
     return (
       <fieldset>
         <legend>{t("labels.textAlign")}</legend>
-        <ButtonIconSelect<TextAlign | false>
-          group="text-align"
-          options={[
-            {
-              value: "left",
-              text: t("labels.left"),
-              icon: TextAlignLeftIcon,
-              testId: "align-left",
-            },
-            {
-              value: "center",
-              text: t("labels.center"),
-              icon: TextAlignCenterIcon,
-              testId: "align-horizontal-center",
-            },
-            {
-              value: "right",
-              text: t("labels.right"),
-              icon: TextAlignRightIcon,
-              testId: "align-right",
-            },
-          ]}
-          value={getFormValue(
-            elements,
-            appState,
-            (element) => {
-              if (isTextElement(element)) {
-                return element.textAlign;
-              }
-              const boundTextElement = getBoundTextElement(
-                element,
-                elementsMap,
-              );
-              if (boundTextElement) {
-                return boundTextElement.textAlign;
-              }
-              return null;
-            },
-            (element) =>
-              isTextElement(element) ||
-              getBoundTextElement(element, elementsMap) !== null,
-            (hasSelection) =>
-              hasSelection ? null : appState.currentItemTextAlign,
-          )}
-          onChange={(value) => updateData(value)}
-        />
+        <div className="buttonList">
+          <RadioSelection<TextAlign | false>
+            group="text-align"
+            options={[
+              {
+                value: "left",
+                text: t("labels.left"),
+                icon: TextAlignLeftIcon,
+                testId: "align-left",
+              },
+              {
+                value: "center",
+                text: t("labels.center"),
+                icon: TextAlignCenterIcon,
+                testId: "align-horizontal-center",
+              },
+              {
+                value: "right",
+                text: t("labels.right"),
+                icon: TextAlignRightIcon,
+                testId: "align-right",
+              },
+            ]}
+            value={getFormValue(
+              elements,
+              app,
+              (element) => {
+                if (isTextElement(element)) {
+                  return element.textAlign;
+                }
+                const boundTextElement = getBoundTextElement(
+                  element,
+                  elementsMap,
+                );
+                if (boundTextElement) {
+                  return boundTextElement.textAlign;
+                }
+                return null;
+              },
+              (element) =>
+                isTextElement(element) ||
+                getBoundTextElement(element, elementsMap) !== null,
+              (hasSelection) =>
+                hasSelection ? null : appState.currentItemTextAlign,
+            )}
+            onChange={(value) => updateData(value)}
+          />
+        </div>
       </fieldset>
     );
   },
@@ -1278,54 +1289,56 @@ export const actionChangeVerticalAlign = register({
   PanelComponent: ({ elements, appState, updateData, app }) => {
     return (
       <fieldset>
-        <ButtonIconSelect<VerticalAlign | false>
-          group="text-align"
-          options={[
-            {
-              value: VERTICAL_ALIGN.TOP,
-              text: t("labels.alignTop"),
-              icon: <TextAlignTopIcon theme={appState.theme} />,
-              testId: "align-top",
-            },
-            {
-              value: VERTICAL_ALIGN.MIDDLE,
-              text: t("labels.centerVertically"),
-              icon: <TextAlignMiddleIcon theme={appState.theme} />,
-              testId: "align-middle",
-            },
-            {
-              value: VERTICAL_ALIGN.BOTTOM,
-              text: t("labels.alignBottom"),
-              icon: <TextAlignBottomIcon theme={appState.theme} />,
-              testId: "align-bottom",
-            },
-          ]}
-          value={getFormValue(
-            elements,
-            appState,
-            (element) => {
-              if (isTextElement(element) && element.containerId) {
-                return element.verticalAlign;
-              }
-              const boundTextElement = getBoundTextElement(
-                element,
-                app.scene.getNonDeletedElementsMap(),
-              );
-              if (boundTextElement) {
-                return boundTextElement.verticalAlign;
-              }
-              return null;
-            },
-            (element) =>
-              isTextElement(element) ||
-              getBoundTextElement(
-                element,
-                app.scene.getNonDeletedElementsMap(),
-              ) !== null,
-            (hasSelection) => (hasSelection ? null : VERTICAL_ALIGN.MIDDLE),
-          )}
-          onChange={(value) => updateData(value)}
-        />
+        <div className="buttonList">
+          <RadioSelection<VerticalAlign | false>
+            group="text-align"
+            options={[
+              {
+                value: VERTICAL_ALIGN.TOP,
+                text: t("labels.alignTop"),
+                icon: <TextAlignTopIcon theme={appState.theme} />,
+                testId: "align-top",
+              },
+              {
+                value: VERTICAL_ALIGN.MIDDLE,
+                text: t("labels.centerVertically"),
+                icon: <TextAlignMiddleIcon theme={appState.theme} />,
+                testId: "align-middle",
+              },
+              {
+                value: VERTICAL_ALIGN.BOTTOM,
+                text: t("labels.alignBottom"),
+                icon: <TextAlignBottomIcon theme={appState.theme} />,
+                testId: "align-bottom",
+              },
+            ]}
+            value={getFormValue(
+              elements,
+              app,
+              (element) => {
+                if (isTextElement(element) && element.containerId) {
+                  return element.verticalAlign;
+                }
+                const boundTextElement = getBoundTextElement(
+                  element,
+                  app.scene.getNonDeletedElementsMap(),
+                );
+                if (boundTextElement) {
+                  return boundTextElement.verticalAlign;
+                }
+                return null;
+              },
+              (element) =>
+                isTextElement(element) ||
+                getBoundTextElement(
+                  element,
+                  app.scene.getNonDeletedElementsMap(),
+                ) !== null,
+              (hasSelection) => (hasSelection ? null : VERTICAL_ALIGN.MIDDLE),
+            )}
+            onChange={(value) => updateData(value)}
+          />
+        </div>
       </fieldset>
     );
   },
@@ -1360,7 +1373,7 @@ export const actionChangeRoundness = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => {
+  PanelComponent: ({ elements, appState, updateData, app }) => {
     const targetElements = getTargetElements(
       getNonDeletedElements(elements),
       appState,
@@ -1373,32 +1386,38 @@ export const actionChangeRoundness = register({
     return (
       <fieldset>
         <legend>{t("labels.edges")}</legend>
-        <ButtonIconSelect
-          group="edges"
-          options={[
-            {
-              value: "sharp",
-              text: t("labels.sharp"),
-              icon: EdgeSharpIcon,
-            },
-            {
-              value: "round",
-              text: t("labels.round"),
-              icon: EdgeRoundIcon,
-            },
-          ]}
-          value={getFormValue(
-            elements,
-            appState,
-            (element) =>
-              hasLegacyRoundness ? null : element.roundness ? "round" : "sharp",
-            (element) =>
-              !isArrowElement(element) && element.hasOwnProperty("roundness"),
-            (hasSelection) =>
-              hasSelection ? null : appState.currentItemRoundness,
-          )}
-          onChange={(value) => updateData(value)}
-        />
+        <div className="buttonList">
+          <RadioSelection
+            group="edges"
+            options={[
+              {
+                value: "sharp",
+                text: t("labels.sharp"),
+                icon: EdgeSharpIcon,
+              },
+              {
+                value: "round",
+                text: t("labels.round"),
+                icon: EdgeRoundIcon,
+              },
+            ]}
+            value={getFormValue(
+              elements,
+              app,
+              (element) =>
+                hasLegacyRoundness
+                  ? null
+                  : element.roundness
+                  ? "round"
+                  : "sharp",
+              (element) =>
+                !isArrowElement(element) && element.hasOwnProperty("roundness"),
+              (hasSelection) =>
+                hasSelection ? null : appState.currentItemRoundness,
+            )}
+            onChange={(value) => updateData(value)}
+          />
+        </div>
       </fieldset>
     );
   },
@@ -1519,7 +1538,7 @@ export const actionChangeArrowhead = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => {
+  PanelComponent: ({ elements, appState, updateData, app }) => {
     const isRTL = getLanguage().rtl;
 
     return (
@@ -1531,7 +1550,7 @@ export const actionChangeArrowhead = register({
             options={getArrowheadOptions(!isRTL)}
             value={getFormValue<Arrowhead | null>(
               elements,
-              appState,
+              app,
               (element) =>
                 isLinearElement(element) && canHaveArrowheads(element.type)
                   ? element.startArrowhead
@@ -1548,7 +1567,7 @@ export const actionChangeArrowhead = register({
             options={getArrowheadOptions(!!isRTL)}
             value={getFormValue<Arrowhead | null>(
               elements,
-              appState,
+              app,
               (element) =>
                 isLinearElement(element) && canHaveArrowheads(element.type)
                   ? element.endArrowhead
@@ -1757,52 +1776,54 @@ export const actionChangeArrowType = register({
       captureUpdate: CaptureUpdateAction.IMMEDIATELY,
     };
   },
-  PanelComponent: ({ elements, appState, updateData }) => {
+  PanelComponent: ({ elements, appState, updateData, app }) => {
     return (
       <fieldset>
         <legend>{t("labels.arrowtypes")}</legend>
-        <ButtonIconSelect
-          group="arrowtypes"
-          options={[
-            {
-              value: ARROW_TYPE.sharp,
-              text: t("labels.arrowtype_sharp"),
-              icon: sharpArrowIcon,
-              testId: "sharp-arrow",
-            },
-            {
-              value: ARROW_TYPE.round,
-              text: t("labels.arrowtype_round"),
-              icon: roundArrowIcon,
-              testId: "round-arrow",
-            },
-            {
-              value: ARROW_TYPE.elbow,
-              text: t("labels.arrowtype_elbowed"),
-              icon: elbowArrowIcon,
-              testId: "elbow-arrow",
-            },
-          ]}
-          value={getFormValue(
-            elements,
-            appState,
-            (element) => {
-              if (isArrowElement(element)) {
-                return element.elbowed
-                  ? ARROW_TYPE.elbow
-                  : element.roundness
-                  ? ARROW_TYPE.round
-                  : ARROW_TYPE.sharp;
-              }
+        <div className="buttonList">
+          <RadioSelection
+            group="arrowtypes"
+            options={[
+              {
+                value: ARROW_TYPE.sharp,
+                text: t("labels.arrowtype_sharp"),
+                icon: sharpArrowIcon,
+                testId: "sharp-arrow",
+              },
+              {
+                value: ARROW_TYPE.round,
+                text: t("labels.arrowtype_round"),
+                icon: roundArrowIcon,
+                testId: "round-arrow",
+              },
+              {
+                value: ARROW_TYPE.elbow,
+                text: t("labels.arrowtype_elbowed"),
+                icon: elbowArrowIcon,
+                testId: "elbow-arrow",
+              },
+            ]}
+            value={getFormValue(
+              elements,
+              app,
+              (element) => {
+                if (isArrowElement(element)) {
+                  return element.elbowed
+                    ? ARROW_TYPE.elbow
+                    : element.roundness
+                    ? ARROW_TYPE.round
+                    : ARROW_TYPE.sharp;
+                }
 
-              return null;
-            },
-            (element) => isArrowElement(element),
-            (hasSelection) =>
-              hasSelection ? null : appState.currentItemArrowType,
-          )}
-          onChange={(value) => updateData(value)}
-        />
+                return null;
+              },
+              (element) => isArrowElement(element),
+              (hasSelection) =>
+                hasSelection ? null : appState.currentItemArrowType,
+            )}
+            onChange={(value) => updateData(value)}
+          />
+        </div>
       </fieldset>
     );
   },

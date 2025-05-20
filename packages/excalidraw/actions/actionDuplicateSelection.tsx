@@ -8,16 +8,18 @@ import {
 
 import { getNonDeletedElements } from "@excalidraw/element";
 
-import { LinearElementEditor } from "@excalidraw/element/linearElementEditor";
+import { LinearElementEditor } from "@excalidraw/element";
 
 import {
   getSelectedElements,
   getSelectionStateForElements,
-} from "@excalidraw/element/selection";
+} from "@excalidraw/element";
 
-import { syncMovedIndices } from "@excalidraw/element/fractionalIndex";
+import { syncMovedIndices } from "@excalidraw/element";
 
-import { duplicateElements } from "@excalidraw/element/duplicate";
+import { duplicateElements } from "@excalidraw/element";
+
+import { CaptureUpdateAction } from "@excalidraw/element";
 
 import type { ActionFn } from "@excalidraw/excalidraw/actions/types";
 
@@ -26,7 +28,6 @@ import { DuplicateIcon } from "../components/icons";
 
 import { t } from "../i18n";
 import { isSomeElementSelected } from "../scene";
-import { CaptureUpdateAction } from "../store";
 
 import { register } from "./register";
 
