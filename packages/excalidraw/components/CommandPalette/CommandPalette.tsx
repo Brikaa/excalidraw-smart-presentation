@@ -18,6 +18,7 @@ import type { MarkRequired } from "@excalidraw/common/utility-types";
 import {
   actionClearCanvas,
   actionLink,
+  actionPresent,
   actionToggleSearchMenu,
 } from "../../actions";
 import {
@@ -411,6 +412,15 @@ function CommandPaletteInner({
           viewMode: true,
           perform: () => {
             actionManager.executeAction(actionToggleSearchMenu);
+          },
+        },
+        {
+          label: t("labels.present"),
+          category: DEFAULT_CATEGORIES.app,
+          icon: searchIcon,
+          viewMode: true,
+          perform: () => {
+            actionManager.executeAction(actionPresent);
           },
         },
         {

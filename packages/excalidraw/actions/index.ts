@@ -33,6 +33,8 @@ export {
   actionToggleTheme,
 } from "./actionCanvas";
 
+export { actionPresent } from "./actionPresentation";
+
 export { actionSetEmbeddableAsActiveTool } from "./actionEmbeddable";
 
 export { actionFinalize } from "./actionFinalize";

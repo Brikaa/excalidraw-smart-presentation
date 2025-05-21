@@ -88,6 +88,7 @@ export type ActionName =
   | "deleteSelectedElements"
   | "changeViewBackgroundColor"
   | "clearCanvas"
+  | "present"
   | "zoomIn"
   | "zoomOut"
   | "resetZoom"
