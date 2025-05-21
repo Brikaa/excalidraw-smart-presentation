@@ -25,7 +25,9 @@ https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
    - This behavior can be customized (see below).
 
 4. **Present Your Slides:**
-   - Click **"Present"**, then use `→` / `←` (arrow keys) to navigate.
+
+   - Click **"Present"** in the bottom-right corner (also accessible via the command palette or menu).
+   - Navigate using `→` / `←` arrow keys, or click the sides of the presentation.
 
 ## Tips & Tricks
 
@@ -50,6 +52,5 @@ https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
 
 ## Current Limitations
 
-- Not usable on touch-screens and requires a keyboard since arrow keys are the only way to navigate slides.
-- The "Present" button is not shown on mobile/small screens, users must open a new tab and append `#presentation=0` manually to the website's link.
 - Animation duration (300 ms) and type (linear) are not customizable.
+- Can't create shareable links
