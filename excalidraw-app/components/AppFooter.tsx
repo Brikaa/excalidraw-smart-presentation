@@ -1,6 +1,8 @@
 import { Button, Footer } from "@excalidraw/excalidraw/index";
 import React from "react";
 
+import { useI18n } from "@excalidraw/excalidraw/i18n";
+
 import { isExcalidrawPlusSignedUser } from "../app_constants";
 
 import { DebugFooter, isVisualDebuggerEnabled } from "./DebugCanvas";
@@ -15,6 +17,8 @@ export const AppFooter = React.memo(
     onChange: () => void;
     onPresentation: () => void;
   }) => {
+    const { t } = useI18n();
+
     return (
       <Footer>
         <div
@@ -31,7 +35,7 @@ export const AppFooter = React.memo(
             <EncryptedIcon />
           )}
           <Button onSelect={onPresentation} style={{ width: "fit-content" }}>
-            Present
+            {t("labels.present")}
           </Button>
         </div>
       </Footer>
