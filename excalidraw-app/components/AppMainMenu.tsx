@@ -35,6 +35,7 @@ export const AppMainMenu: React.FC<{
           onSelect={() => props.onCollabDialogOpen()}
         />
       )}
+      <MainMenu.DefaultItems.Present />
       <MainMenu.DefaultItems.CommandPalette className="highlighted" />
       <MainMenu.DefaultItems.SearchMenu />
       <MainMenu.DefaultItems.Help />

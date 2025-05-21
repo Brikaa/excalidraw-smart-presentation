@@ -7,6 +7,7 @@ import type { Theme } from "@excalidraw/element/types";
 import {
   actionClearCanvas,
   actionLoadScene,
+  actionPresent,
   actionSaveToActiveFile,
   actionShortcuts,
   actionToggleSearchMenu,
@@ -29,7 +30,7 @@ import Trans from "../Trans";
 import DropdownMenuItem from "../dropdownMenu/DropdownMenuItem";
 import DropdownMenuItemContentRadio from "../dropdownMenu/DropdownMenuItemContentRadio";
 import DropdownMenuItemLink from "../dropdownMenu/DropdownMenuItemLink";
-import { GithubIcon, DiscordIcon, XBrandIcon } from "../icons";
+import { GithubIcon, DiscordIcon, XBrandIcon, presentIcon } from "../icons";
 import {
   boltIcon,
   DeviceDesktopIcon,
@@ -393,3 +394,20 @@ export const LiveCollaborationTrigger = ({
 };
 
 LiveCollaborationTrigger.displayName = "LiveCollaborationTrigger";
+
+export const Present = () => {
+  const { t } = useI18n();
+
+  const actionManager = useExcalidrawActionManager();
+  return (
+    <DropdownMenuItem
+      icon={presentIcon}
+      onSelect={() => actionManager.executeAction(actionPresent)}
+      data-testid="present-button"
+    >
+      {t("labels.present")}
+    </DropdownMenuItem>
+  );
+};
+
+Present.displayName = "Present";
