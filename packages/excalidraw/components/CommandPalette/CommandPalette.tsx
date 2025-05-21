@@ -52,6 +52,7 @@ import {
   mermaidLogoIcon,
   brainIconThin,
   LibraryIcon,
+  presentIcon,
 } from "../icons";
 
 import { SHAPES } from "../shapes";
@@ -417,7 +418,7 @@ function CommandPaletteInner({
         {
           label: t("labels.present"),
           category: DEFAULT_CATEGORIES.app,
-          icon: searchIcon,
+          icon: presentIcon,
           viewMode: true,
           perform: () => {
             actionManager.executeAction(actionPresent);

@@ -1945,6 +1945,17 @@ export const searchIcon = createIcon(
   tablerIconProps,
 );
 
+export const presentIcon = createIcon(
+  <g strokeWidth={1.5}>
+    <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+    <rect x="3" y="3" width="18" height="14" />
+    <polygon points="10,7 14,10 10,13" />
+    <line x1="12" y1="17" x2="12" y2="22" />
+    <line x1="7" y1="22" x2="17" y2="22" />
+  </g>,
+  tablerIconProps,
+);
+
 export const clockIcon = createIcon(
   <g strokeWidth={1.5}>
     <path stroke="none" d="M0 0h24v24H0z" fill="none" />

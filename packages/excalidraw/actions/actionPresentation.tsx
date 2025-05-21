@@ -1,13 +1,13 @@
 import { CaptureUpdateAction } from "@excalidraw/excalidraw";
 import { register } from "@excalidraw/excalidraw/actions/register";
-import { TrashIcon } from "@excalidraw/excalidraw/components/icons";
+import { presentIcon } from "@excalidraw/excalidraw/components/icons";
 
 export const actionPresent = register({
   name: "present",
   label: "labels.present",
-  icon: TrashIcon,
+  icon: presentIcon,
   trackEvent: { category: "canvas" },
-  perform: (elements, appState, _, app) => {
+  perform: (_, appState, __, app) => {
     const frames = app.scene
       .getNonDeletedElements()
       .filter((e) => e.type === "frame");
