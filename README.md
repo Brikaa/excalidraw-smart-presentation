@@ -60,3 +60,7 @@ https://github.com/user-attachments/assets/6f5cc273-15b3-4c63-aa4c-2b67f6051e03
 
 - Animation duration (300 ms) and type (linear) are not customizable.
 - Can't create shareable links.
+
+## Other demos
+
+[Excalidraw freedraw tool presentation](https://www.youtube.com/watch?v=DLzGZTuciMo)
