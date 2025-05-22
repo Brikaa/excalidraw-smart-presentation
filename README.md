@@ -29,6 +29,8 @@ https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
    - Click **"Present"** in the bottom-right corner (also accessible via the command palette or menu).
    - Navigate using `→` / `←` arrow keys, or click the sides of the presentation.
 
+https://github.com/user-attachments/assets/7920f88c-01c0-4b3f-8620-13bd5ae86d03
+
 ## Tips & Tricks
 
 - **Start from a Specific Slide:**
@@ -44,13 +46,17 @@ https://github.com/user-attachments/assets/62033fca-03ca-489f-aeeb-5d51331deac9
   - Select an element, then press **`Ctrl + Shift + D`**
   - Or use **"Duplicate into next frame"** from the command palette.
 
+https://github.com/user-attachments/assets/05e9a464-6e82-492b-9961-af0500822534
+
 - **Fix Unintended Animations:**
 
   - Elements with the **same name** in consecutive frames are animated.
   - Elements are given the same name on duplication, hence why duplicated elements are animated.
   - Rename elements in **"Canvas & Shape Properties"** to prevent unwanted animations or to animate different elements.
 
+https://github.com/user-attachments/assets/6f5cc273-15b3-4c63-aa4c-2b67f6051e03
+
 ## Current Limitations
 
 - Animation duration (300 ms) and type (linear) are not customizable.
-- Can't create shareable links
+- Can't create shareable links.
