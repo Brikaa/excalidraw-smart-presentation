@@ -144,7 +144,8 @@ export type ActionName =
   | "cropEditor"
   | "wrapSelectionInFrame"
   | "toggleLassoTool"
-  | "toggleShapeSwitch";
+  | "toggleShapeSwitch"
+  | "togglePolygon";
 
 export type PanelComponentProps = {
   elements: readonly ExcalidrawElement[];
@@ -153,6 +154,10 @@ export type PanelComponentProps = {
   appProps: ExcalidrawProps;
   data?: Record<string, any>;
   app: AppClassProperties;
+  renderAction: (
+    name: ActionName,
+    data?: PanelComponentProps["data"],
+  ) => React.JSX.Element | null;
 };
 
 export interface Action {

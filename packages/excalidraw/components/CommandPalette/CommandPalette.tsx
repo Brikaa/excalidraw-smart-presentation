@@ -61,6 +61,8 @@ import { useStableCallback } from "../../hooks/useStableCallback";
 import { activeConfirmDialogAtom } from "../ActiveConfirmDialog";
 import { useStable } from "../../hooks/useStable";
 
+import { Ellipsify } from "../Ellipsify";
+
 import * as defaultItems from "./defaultCommandPaletteItems";
 
 import "./CommandPalette.scss";
@@ -296,6 +298,7 @@ function CommandPaletteInner({
         actionManager.actions.decreaseFontSize,
         actionManager.actions.toggleLinearEditor,
         actionManager.actions.cropEditor,
+        actionManager.actions.togglePolygon,
         actionLink,
         actionCopyElementLink,
         actionLinkToElement,
@@ -514,7 +517,6 @@ function CommandPaletteInner({
               if (value === "image") {
                 app.setActiveTool({
                   type: value,
-                  insertOnCanvasDirectly: event.type === EVENT.KEYDOWN,
                 });
               } else {
                 app.setActiveTool({ type: value });
@@ -976,7 +978,7 @@ const CommandItem = ({
             }
           />
         )}
-        {command.label}
+        <Ellipsify>{command.label}</Ellipsify>
       </div>
       {showShortcut && command.shortcut && (
         <CommandShortcutHint shortcut={command.shortcut} />
